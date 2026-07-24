@@ -1,0 +1,88 @@
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: ${NEO4J_USERNAME:-neo4j}/${NEO4J_PASSWORD:-neo4jpassword}
+      NEO4J_server_memory_pagecache_size: 512M
+      NEO4J_server_memory_heap_initial__size: 512M
+      NEO4J_server_memory_heap_max__size: 512M
+      NEO4J_PLUGINS: '["apoc","apoc-extended","graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*,gds.*
+      NEO4J_dbms_security_procedures_allowlist: apoc.meta.data,apoc.meta.schema,gds.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/import
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -a bolt://localhost:7687 -u ${NEO4J_USERNAME:-neo4j} -p ${NEO4J_PASSWORD:-neo4jpassword} 'RETURN 1' >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  neo4j-mcp-server:
+    image: ${NEO4J_MCP_SERVER_IMAGE:-mcp/neo4j:latest}
+    restart: unless-stopped
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    environment:
+      NEO4J_TRANSPORT_MODE: "http"
+      NEO4J_MCP_HTTP_HOST: "0.0.0.0"
+      NEO4J_MCP_HTTP_PORT: "8000"
+      NEO4J_URI: "bolt://neo4j:7687"
+      NEO4J_DATABASE: "neo4j"
+      NEO4J_READ_ONLY: "true"
+      NEO4J_TELEMETRY: "false"
+      NEO4J_HTTP_ALLOW_UNAUTHENTICATED_PING: "true"
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "/app/neo4j-mcp", "--version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  app:
+    build: ../graphrag
+    restart: unless-stopped
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      neo4j-mcp-server:
+        condition: service_healthy
+    env_file:
+      - ../graphrag/.env
+    environment:
+      APP_HOST: 0.0.0.0
+      APP_PORT: 8080
+      MCP_SERVER_URL: http://neo4j-mcp-server:8000/mcp
+    ports:
+      - "8080:8080"
+
+  seed-gtd:
+    build: ../graphrag
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    env_file:
+      - ../graphrag/.env
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4jpassword}
+    volumes:
+      - ./data/gtd:/seed:ro
+    command: ["neo4j-mcp-langgraph-seed-gtd", "--csv", "/seed/gtd.csv", "--wipe"]
+    profiles:
+      - seed
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
