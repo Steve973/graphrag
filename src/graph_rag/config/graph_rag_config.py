@@ -105,6 +105,9 @@ class GraphRagSettings(BaseSettings):
         llm_temperature: Sampling temperature used for model requests.
         llm_max_tokens: Maximum number of output tokens requested from the
             model.
+        llm_timeout_seconds: End-to-end timeout for one provider request.
+        llm_num_retries: Number of transient provider retries performed by
+            LiteLLM.
         graph_db_mcp_url: HTTP URL of the MCP service that exposes graph tools.
         graph_db_username: Username used when authenticating graph-tool
             requests.
@@ -135,6 +138,8 @@ class GraphRagSettings(BaseSettings):
     llm_provider: NonEmptyStr
     llm_temperature: float = Field(default=0.0, ge=0.0)
     llm_max_tokens: int = Field(default=4096, ge=1)
+    llm_timeout_seconds: float = Field(default=60.0, gt=0.0)
+    llm_num_retries: int = Field(default=2, ge=0)
 
     # Graph-tool service configuration
     graph_db_mcp_url: AnyHttpUrl
@@ -190,4 +195,3 @@ def get_graph_rag_settings() -> GraphRagSettings:
     """
 
     return GraphRagSettings()  # type: ignore[call-arg]
-
