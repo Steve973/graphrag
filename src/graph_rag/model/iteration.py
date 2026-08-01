@@ -158,20 +158,7 @@ class IterationRecord(ContractModel):
         if len(error_ids) != len(set(error_ids)):
             raise ValueError("iteration error ids must be unique")
 
-        retained_result_ids = set(result_ids)
-        for evidence in self.evidence_records:
-            missing_result_ids = (
-                    set(evidence.evidence_data_ids) - retained_result_ids
-            )
-            if missing_result_ids:
-                raise ValueError(
-                    f"evidence record {evidence.id!r} references tool results "
-                    f"not retained by this iteration: "
-                    f"{sorted(missing_result_ids)!r}"
-                )
-
-        # Terminal actions are selected because of this iteration's context
-        # evaluation, but they do not execute or produce tool artifacts.
+        # Terminal actions do not execute or produce iteration artifacts.
         if isinstance(self.action, FinalizeAction):
             if self.action_result is not None:
                 raise ValueError(
@@ -225,8 +212,6 @@ class IterationRecord(ContractModel):
                     "call-tool actions require call-tool action results"
                 )
 
-            # CallToolAction represents one exact invocation, so the iteration
-            # must retain exactly one raw result for that request.
             if len(self.tool_results) != 1:
                 raise ValueError(
                     "call-tool actions require exactly one tool result"
@@ -257,18 +242,6 @@ class IterationRecord(ContractModel):
                     raise ValueError(
                         "successful tool calls require at least one "
                         "evidence record"
-                    )
-
-                unrelated_evidence = [
-                    evidence.id
-                    for evidence in self.evidence_records
-                    if tool_result.id not in evidence.evidence_data_ids
-                ]
-                if unrelated_evidence:
-                    raise ValueError(
-                        "evidence produced by a successful tool action must "
-                        "reference that action's tool result: "
-                        f"{unrelated_evidence!r}"
                     )
 
             elif tool_result.status == ToolResultStatus.ERROR:
