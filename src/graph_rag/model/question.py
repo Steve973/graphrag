@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import TypeAlias, Literal
 
 from pydantic import (
     Field,
@@ -61,6 +61,13 @@ class WorkflowLimits(ContractModel):
             "supplied enum value and apply its documented semantics consistently."
         ),
     )
+
+
+FinalAnswerStatus: TypeAlias = Literal[
+    WorkflowStatus.COMPLETE,
+    WorkflowStatus.PARTIAL,
+    WorkflowStatus.FAILED,
+]
 
 
 class Question(ContractModel):
@@ -130,12 +137,7 @@ class FinalAnswer(ContractModel):
             "raw results, and iteration trace. Copy it from GraphRagState.workflow_id."
         ),
     )
-    status: Literal[
-        WorkflowStatus.COMPLETE,
-        WorkflowStatus.PARTIAL,
-        WorkflowStatus.NEEDS_CLARIFICATION,
-        WorkflowStatus.FAILED,
-    ] = Field(
+    status: FinalAnswerStatus = Field(
         description=(
             "Terminal workflow status. It must agree with the final action and latest "
             "evaluation; use COMPLETE only for a fully supported answer."
@@ -143,9 +145,9 @@ class FinalAnswer(ContractModel):
     )
     answer: NonEmptyStr = Field(
         description=(
-            "Direct user-facing answer or clarification request. Base factual claims on "
-            "the accepted findings and evidence carried by the workflow, but do not "
-            "expose internal IDs or raw trace data unless the user requested them."
+            "Direct user-facing answer. Base factual claims on the accepted findings "
+            "and evidence carried by the workflow, but do not expose internal IDs or "
+            "raw trace data."
         ),
     )
     confidence: float = Field(
