@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from graph_rag.model.context import GraphContext
+from graph_rag.model.rag_state import GraphContext
 from graph_rag.model.tool_operations import ToolCallRequest, ToolCallResult
 
 

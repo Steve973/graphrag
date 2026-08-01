@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from graph_rag.model.audit import CompletedWorkflowRecord
 from graph_rag.model.rag_state import GraphRagState
 
 
@@ -12,11 +11,11 @@ class WorkflowRepository(ABC):
     """Store and retrieve terminal workflow audit packages."""
 
     @abstractmethod
-    async def save(self, record: CompletedWorkflowRecord) -> None:
+    async def save(self, record: object) -> None:
         """Store one completed workflow package by its workflow ID."""
 
     @abstractmethod
-    async def get(self, workflow_id: str) -> CompletedWorkflowRecord | None:
+    async def get(self, workflow_id: str) -> object | None:
         """Retrieve one completed workflow package when it exists."""
 
 
@@ -39,10 +38,10 @@ class WorkflowCheckpointRepository(ABC):
 class NoOpWorkflowRepository(WorkflowRepository):
     """Discard completed workflow packages while satisfying the boundary."""
 
-    async def save(self, record: CompletedWorkflowRecord) -> None:
+    async def save(self, record: object) -> None:
         """Discard one completed workflow package."""
 
-    async def get(self, workflow_id: str) -> CompletedWorkflowRecord | None:
+    async def get(self, workflow_id: str) -> object | None:
         """Return no completed workflow package."""
 
         return None

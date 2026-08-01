@@ -161,7 +161,7 @@ class IterationRecord(ContractModel):
         retained_result_ids = set(result_ids)
         for evidence in self.evidence_records:
             missing_result_ids = (
-                    set(evidence.source_result_ids) - retained_result_ids
+                    set(evidence.evidence_data_ids) - retained_result_ids
             )
             if missing_result_ids:
                 raise ValueError(
@@ -262,7 +262,7 @@ class IterationRecord(ContractModel):
                 unrelated_evidence = [
                     evidence.id
                     for evidence in self.evidence_records
-                    if tool_result.id not in evidence.source_result_ids
+                    if tool_result.id not in evidence.evidence_data_ids
                 ]
                 if unrelated_evidence:
                     raise ValueError(
