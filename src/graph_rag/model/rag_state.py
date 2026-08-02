@@ -172,7 +172,12 @@ class GraphRagState(ContractModel):
             "iteration is active."
         ),
     )
-    iterations: Annotated[list[IterationRecord], operator.add]
+    iterations: Annotated[list[IterationRecord], operator.add] = Field(
+        default_factory=list,
+        description=(
+            "List of iteration records, in order of iteration."
+        ),
+    )
     latest_evaluation: WorkflowEvaluation | None = Field(
         default=None,
         description=(

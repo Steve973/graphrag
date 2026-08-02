@@ -18,7 +18,6 @@ from graph_rag.model.base import (
     NonEmptyStr
 )
 from graph_rag.model.supporting_data import (
-    Assumption,
     Contradiction, EvidenceRecord
 )
 from graph_rag.utils import (
@@ -156,7 +155,6 @@ class WorkflowEvaluation(BaseEvaluationContent):
         id: Stable evaluation identifier.
         iteration_number: Iteration for which the evaluation was produced.
         evidence_records: Accumulated evidence to be materially considered.
-        assumptions: Current assumptions affecting the investigation.
         contradictions: Current contradictions affecting the investigation.
         answerability: Current ability to produce a supported response.
         iteration_purpose: Immediate goal that should guide this iteration.
@@ -184,17 +182,6 @@ class WorkflowEvaluation(BaseEvaluationContent):
         description=(
             "UTC timestamp generated when the evaluation is created. Omit it unless the "
             "application explicitly supplies the timestamp."
-        ),
-    )
-    assumptions: Annotated[
-        list[Assumption],
-        BeforeValidator(scalar_to_list),
-    ] = Field(
-        default_factory=list,
-        description=(
-            "Current assumptions discovered or still relevant while evaluating this plan. "
-            "Include only assumptions that affect reasoning or completion, with explicit "
-            "impact and evidence links where applicable."
         ),
     )
     contradictions: Annotated[
@@ -225,29 +212,9 @@ class WorkflowEvaluation(BaseEvaluationContent):
             raise ValueError("evaluation evidence records must be unique")
         available_evidence = set(evidence_ids)
 
-        assumption_ids = [item.id for item in self.assumptions]
-        if len(assumption_ids) != len(set(assumption_ids)):
-            raise ValueError("assumption ids must be unique within an evaluation")
-
         contradiction_ids = [item.id for item in self.contradictions]
         if len(contradiction_ids) != len(set(contradiction_ids)):
             raise ValueError("contradiction ids must be unique within an evaluation")
-
-        for assumption in self.assumptions:
-            if len(assumption.evidence_record_ids) != len(
-                    set(assumption.evidence_record_ids)
-            ):
-                raise ValueError(
-                    f"assumption {assumption.id!r} has duplicate evidence ids"
-                )
-            missing_evidence = (
-                    set(assumption.evidence_record_ids) - available_evidence
-            )
-            if missing_evidence:
-                raise ValueError(
-                    f"assumption {assumption.id!r} references missing evidence: "
-                    f"{sorted(missing_evidence)!r}"
-                )
 
         for contradiction in self.contradictions:
             if len(contradiction.evidence_record_ids) != len(
@@ -268,7 +235,7 @@ class WorkflowEvaluation(BaseEvaluationContent):
         if self.answerability == Answerability.COMPLETE:
             blocking_reasoning = [
                 item.id
-                for item in [*self.assumptions, *self.contradictions]
+                for item in self.contradictions
                 if item.impact == ReasoningImpact.BLOCKING
             ]
             if blocking_reasoning:
@@ -278,45 +245,6 @@ class WorkflowEvaluation(BaseEvaluationContent):
                 )
 
         return self
-
-
-class AssumptionsUpdate(ContractModel):
-    """
-    Represents an update operation for handling assumptions associated with a plan.
-
-    This class allows modifications to the existing list of assumptions using a specified
-    update type. The supported update types include replacing all existing assumptions,
-    removing specific ones, or appending new assumptions to the list. Each assumption should
-    be explicitly defined where possible and linked with its impact and evidence.
-
-    Attributes:
-        type: Update type for assumptions. 'replace' replaces all existing assumptions
-            with the provided list. 'remove' removes the specified assumptions from
-            the existing list. 'append' adds the provided assumptions to the existing
-            list.
-        assumptions: A list of assumptions to update the existing list of assumptions.
-    """
-
-    type: Literal["replace", "remove", "append"] = Field(
-        default="append",
-        description=(
-            "Update type for assumptions. 'replace' replaces all existing assumptions "
-            "with the provided list. 'remove' removes the specified assumptions from "
-            "the existing list. 'append' adds the provided assumptions to the existing "
-            "list."
-        ),
-    )
-    assumptions: Annotated[
-        list[Assumption],
-        BeforeValidator(scalar_to_list),
-    ] = Field(
-        default_factory=list,
-        description=(
-            "Current assumptions discovered or still relevant while evaluating this plan. "
-            "Include only assumptions that affect reasoning or completion, with explicit "
-            "impact and evidence links where applicable."
-        ),
-    )
 
 
 class ContradictionsUpdate(ContractModel):
@@ -391,15 +319,6 @@ class EvaluationResult(BaseEvaluationContent):
         description=(
             "Stable identifier for this evaluation result, normally generated automatically. "
             "Omit it when producing a new evaluation result."
-        ),
-    )
-    assumptions_updates: Annotated[
-        list[AssumptionsUpdate],
-        BeforeValidator(scalar_to_list),
-    ] = Field(
-        default_factory=list,
-        description=(
-            "Assumptions updates to be applied, in order, to the list of assumptions."
         ),
     )
     contradictions_updates: Annotated[
