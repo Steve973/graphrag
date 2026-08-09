@@ -120,6 +120,9 @@ class Question(ContractModel):
         ),
     )
 
+    def simple_string(self) -> str:
+        return f"Question: {self.text}"
+
 
 class FinalAnswer(ContractModel):
     """Represent the public terminal response.

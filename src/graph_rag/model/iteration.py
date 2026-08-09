@@ -24,7 +24,7 @@ from graph_rag.model.base import (
     ContractModel, Answerability
 )
 from graph_rag.model.plan import Plan
-from graph_rag.model.supporting_data import EvidenceRecord
+from graph_rag.model.supporting_data import EvidenceSummary
 from graph_rag.model.tool_operations import (
     ToolCallResult,
     ToolResultStatus
@@ -108,7 +108,7 @@ class IterationRecord(ContractModel):
         ),
     )
     evidence_records: Annotated[
-        list[EvidenceRecord],
+        list[EvidenceSummary],
         BeforeValidator(scalar_to_list),
     ] = Field(
         default_factory=list,
@@ -290,7 +290,7 @@ class IterationRecordBuilder:
     action: WorkflowAction | None = None
     action_result: ExecutedActionResult | None = None
     tool_results: list[ToolCallResult] = field(default_factory=list)
-    evidence_records: list[EvidenceRecord] = field(default_factory=list)
+    evidence_records: list[EvidenceSummary] = field(default_factory=list)
     errors: list[WorkflowError] = field(default_factory=list)
 
     def set_plan(self, plan: Plan) -> Self:
@@ -337,7 +337,7 @@ class IterationRecordBuilder:
 
     def add_evidence_record(
         self,
-        evidence_record: EvidenceRecord,
+        evidence_record: EvidenceSummary,
     ) -> Self:
         """Retain one evidence record produced during this iteration."""
 

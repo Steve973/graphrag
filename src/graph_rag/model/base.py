@@ -3,9 +3,10 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import (
     TypeAlias,
-    Annotated
+    Annotated, Literal
 )
 
+import yaml
 from pydantic import (
     StringConstraints,
     BaseModel,
@@ -190,3 +191,56 @@ class ContractModel(BaseModel):
         frozen=True,
         validate_default=True,
     )
+
+    def to_structured_text(
+        self,
+        text_format: Literal["json", "yaml"] = "yaml",
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        exclude_none: bool = True,
+        indent: int = 2,
+    ) -> str:
+        """
+        Converts the object's data into a structured text format such as JSON or YAML.
+
+        This method serializes the object's attributes into a specified text format.
+        Users can customize the output by specifying attributes to include or exclude,
+        and adjust formatting using the indentation level. Supported formats include
+        `json` and `yaml`. If the text format is not supported, a ValueError is raised.
+
+        Args:
+            text_format (Literal["json", "yaml"]): The desired output format for the structured text. Defaults to "yaml".
+            include (set[str] | None): A set of attribute names to include in the output. If None, all attributes
+                are included. Defaults to None.
+            exclude (set[str] | None): A set of attribute names to exclude from the output. Defaults to None.
+            exclude_none (bool): Whether to exclude attributes with None values from the output. Defaults to False.
+            indent (int): The number of spaces for indentation in the serialized output. Only applicable for
+                formats that support indentation. Defaults to 2.
+
+        Returns:
+            str: The serialized object data is formatted to the specified `text_format`.
+        """
+
+        match text_format:
+            case "json":
+                return self.model_dump_json(
+                    include=include,
+                    exclude=exclude,
+                    exclude_none=exclude_none,
+                    indent=indent,
+                )
+            case "yaml":
+                values = self.model_dump(
+                    mode="json",
+                    include=include,
+                    exclude=exclude,
+                    exclude_none=exclude_none,
+                )
+                return yaml.safe_dump(
+                    values,
+                    sort_keys=False,
+                    allow_unicode=True,
+                    indent=indent,
+                )
+            case _:
+                raise ValueError(f"Unsupported text format: {text_format}")

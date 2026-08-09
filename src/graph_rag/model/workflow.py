@@ -18,7 +18,7 @@ from graph_rag.model.base import (
     NonEmptyStr
 )
 from graph_rag.model.supporting_data import (
-    Contradiction, EvidenceRecord
+    Contradiction, EvidenceSummary
 )
 from graph_rag.utils import (
     new_id,
@@ -195,7 +195,7 @@ class WorkflowEvaluation(BaseEvaluationContent):
             "evidence."
         ),
     )
-    evidence_records: list[EvidenceRecord] = Field(
+    evidence_records: list[EvidenceSummary] = Field(
         default_factory=list,
         description=(
             "Accumulated evidence in the working context that is materially "
@@ -330,7 +330,7 @@ class EvaluationResult(BaseEvaluationContent):
             "Contradictions updates to be applied, in order, to the list of contradictions."
         ),
     )
-    new_evidence_records: list[EvidenceRecord] = Field(
+    new_evidence_records: list[EvidenceSummary] = Field(
         default_factory=list,
         description=(
             "Evidence from the preceding iteration to incorporate into the "

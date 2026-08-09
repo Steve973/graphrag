@@ -77,7 +77,7 @@ class EvidenceData(ContractModel):
     )
 
 
-class EvidenceRecord(ContractModel):
+class EvidenceSummary(ContractModel):
     """Carry a prompt-friendly interpretation of retained tool results.
 
     The LLM creates an evidence record after examining raw result data. The
@@ -128,7 +128,7 @@ class EvidenceRecord(ContractModel):
     )
 
     @model_validator(mode="after")
-    def validate_source_results(self) -> EvidenceRecord:
+    def validate_source_results(self) -> EvidenceSummary:
         """Reject duplicate source-result identifiers."""
 
         if len(self.evidence_data_ids) != len(set(self.evidence_data_ids)):

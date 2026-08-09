@@ -17,7 +17,7 @@ from graph_rag.model.question import (
     Question,
     FinalAnswer
 )
-from graph_rag.model.supporting_data import EvidenceRecord, EvidenceData
+from graph_rag.model.supporting_data import EvidenceSummary, EvidenceData
 from graph_rag.model.tool_operations import AvailableTool
 from graph_rag.model.workflow import WorkflowEvaluation
 from graph_rag.utils import scalar_to_list
@@ -64,7 +64,7 @@ class GraphContext(ContractModel):
         ),
     )
     sample_data: Annotated[
-        list[EvidenceRecord],
+        list[EvidenceSummary],
         BeforeValidator(scalar_to_list),
     ] = Field(
         default_factory=list,
@@ -127,7 +127,7 @@ class GraphRagState(ContractModel):
             ``None`` before an iteration is active.
         iterations: Append-only completed iteration history.
         latest_evaluation: Most recent assessment of the current plan revision.
-        evidence_records: Accumulated prompt-friendly evidence summaries.
+        evidence_summaries: Accumulated prompt-friendly evidence summaries.
         status: Current workflow lifecycle status.
         final_answer: Public terminal response after finalization.
     """
@@ -194,13 +194,13 @@ class GraphRagState(ContractModel):
             "Raw data from tool calls that generated evidence."
         ),
     )
-    evidence_records: Annotated[
-        list[EvidenceRecord],
+    evidence_summaries: Annotated[
+        list[EvidenceSummary],
         BeforeValidator(scalar_to_list),
     ] = Field(
         default_factory=list,
         description=(
-            "Accumulated compact EvidenceRecord summaries available for future prompts "
+            "Accumulated compact evidence summaries available for future prompts "
             "and reasoning. Do not include raw tool-result data here."
         ),
     )
