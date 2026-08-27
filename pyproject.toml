@@ -3,6 +3,7 @@ name = "graph_rag"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+  "cymple==0.12.0",
   "fastapi==0.139.2",
   "httpx==0.28.1",
   "langgraph==1.2.9",
