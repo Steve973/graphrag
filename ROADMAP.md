@@ -10,6 +10,30 @@ appropriate priority as they arise. The same applies to collaboration with MITRE
 becomes important through those efforts should be merged into the priority list where it makes the most sense, 
 or scheduled according to management direction.
 
+## 0.5 AI-Generated Basic (React) UI
+
+Create a lightweight AI-generated web interface to replace Swagger as the primary demonstration surface. The 
+initial UI does not need to be a polished analyst application; its purpose is to make the existing workflow
+easier to run, observe, and explain during development and demonstrations.
+
+The UI should allow a user to submit a question and show meaningful workflow progress as the graph moves 
+through evaluation, iteration, tool execution, query repair, evidence handling, and finalization. Progress
+should be streamed from the backend, likely through Server-Sent Events, so that the user can see the workflow 
+advancing rather than waiting on a single long-running HTTP response.
+
+The progress stream should use application-level workflow events rather than exposing raw LangGraph state 
+changes. This keeps the UI tied to stable concepts such as iteration started, plan step in progress, tool 
+execution completed, query repair attempted, evidence evaluated, and iteration finalized, even if the internal 
+graph structure changes later.
+
+When execution completes, the same interface should display the final answer and, once available, the workflow
+report. This provides a substantially better demonstration of the agentic workflow than Swagger because the 
+planning, iteration, repair, and evaluation behavior becomes visible while it is happening.
+
+This is intentionally a small, high-value UI effort. Most of the implementation can likely be generated with
+an AI coding tool once the backend event contract is defined, allowing the effort to remain focused on the 
+workflow itself rather than front-end development.
+
 ## 1. Workflow Report
 
 Generate a structured workflow report at the end of each completed request and return it alongside the final
