@@ -34,6 +34,9 @@ This is intentionally a small, high-value UI effort. Most of the implementation 
 an AI coding tool once the backend event contract is defined, allowing the effort to remain focused on the 
 workflow itself rather than front-end development.
 
+Even though this is listed first, it does not have to be the highest priority. I see it as something that
+can be thrown together quickly while other items are being worked.
+
 ## 1. Workflow Report
 
 Generate a structured workflow report at the end of each completed request and return it alongside the final
