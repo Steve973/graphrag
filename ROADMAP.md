@@ -1,301 +1,327 @@
 # Agentic Workflow Roadmap
 
-## 1. Generate the Workflow Report
+The following roadmap represents what I currently see as the most necessary and useful features to build on the
+minimum viable product and turn it into a system that is genuinely useful for the mission. The priorities are
+centered on making the workflow produce results that are as accurate, well-supported, and resistant to 
+hallucination as possible, while also making those results understandable and actionable.
 
-Build the report directly from the workflow state and finalized iteration records and return it alongside the answer in 
-the Swagger response.
+This ordering is not intended to be rigid. Urgent mission needs should be inserted into the roadmap at the
+appropriate priority as they arise. The same applies to collaboration with MITRE and other teams: work that 
+becomes important through those efforts should be merged into the priority list where it makes the most sense, 
+or scheduled according to management direction.
 
-The report should expose the execution in a way that makes the workflow mechanically inspectable.
+## 1. Workflow Report
 
-Useful contents include:
+Generate a structured workflow report at the end of each completed request and return it alongside the final
+answer. The report should explain what the workflow actually did in a way that is useful to an analyst,
+developer, or stakeholder rather than simply exposing raw logs.
 
-- Original request
-- Initial evaluation
-- Iteration objectives
-- Decisions made during each iteration
-- Tool calls and query arguments
-- Query repair attempts
-- Raw evidence references
-- Evidence summaries
-- Result evaluations
-- Accepted and rejected findings
-- Final evaluation
-- Final answer
-- Execution timing and other useful metadata
+The report should include the original question, major evaluation and decision points, iteration objectives,
+tool activity, query repairs, evidence gathered, findings accepted or rejected, and the path that led to the
+final answer. It should be generated from the workflow state and finalized iteration records so that it
+reflects the actual execution rather than reconstructing events afterward.
 
-Initially, this does not need persistence. The report can simply be constructed at Finalize and returned with the 
-response.
-
-**Why now:** The underlying workflow already works, and most of the information already exists. This should have high 
-demo value for relatively little architectural risk. It also immediately exposes weaknesses in the execution record 
-because anything missing from the report becomes obvious.
+Initially, the report can simply be returned in the Swagger response without requiring persistence. This is
+a high-value early feature because most of the required information already exists, and it makes the
+workflow's mechanical transparency immediately visible in a demonstration.
 
 ---
 
-## 2. Add Antagonistic Evidence-Summary Evaluation
+## 2. Antagonistic Evidence Validation
 
-After evidence has been summarized, independently evaluate the summary against the actual source record that produced 
-it.
+Add an independent validation step for evidence summaries. When the workflow summarizes a retrieved data
+record, a separate evaluator should receive the user's question, the iteration purpose, the plan step the
+evidence is intended to support, the generated summary, and the actual source record.
 
-The antagonistic evaluator should challenge whether:
+The evaluator should determine whether the summary genuinely follows from the source and whether the source
+actually contributes evidence toward the intended plan step. It should look for unsupported claims,
+hallucinated details, omitted qualifiers, ignored contradictions, overstatement, and conclusions that are
+stronger than the source data allows.
 
-- Every substantive claim is supported by the underlying record
-- Anything was hallucinated or inferred beyond the evidence
-- Important qualifiers were omitted
-- Contradictory information was ignored
-- The summary accurately represents the strength of the source evidence
-- The evidence actually supports the purpose of the current iteration
-- The summary should be accepted, rejected, or qualified
+This distinction matters because a summary may accurately describe a record while still failing to provide
+evidence for the question the workflow is trying to answer. The evaluation should therefore challenge both
+factual fidelity and evidentiary relevance.
 
-Store the antagonistic evaluation with the iteration so it also becomes visible in the workflow report.
-
-**Why here:** This is a relatively contained change with potentially high reliability payoff. It strengthens the 
-evidence entering the rest of the reasoning process without requiring a major redesign.
-
----
-
-## 3. Add Antagonistic Full-Context Evaluation
-
-Add an adversarial review after the workflow has accumulated enough context to form broader findings or conclusions.
-
-This evaluator should challenge whether:
-
-- The conclusions actually follow from the collected evidence
-- Evidence from different sources is being combined legitimately
-- Correlation or association is being overstated
-- Unsupported assumptions are bridging gaps in the evidence
-- Contradictory evidence has been addressed
-- Confidence is appropriate for the available evidence
-- The final interpretation goes beyond what the investigation established
-- Important uncertainty should be exposed to the user
-
-The output of this evaluation should become part of both the final decision process and the workflow report.
-
-**Why after evidence-level validation:** The first antagonistic layer checks whether individual evidence representations 
-are trustworthy. This layer then checks whether those trustworthy pieces are being assembled into a defensible 
-conclusion.
+The validation result should become part of the finalized iteration record and should also appear in the
+workflow report. This is an early reliability improvement because it challenges hallucination and
+evidentiary overreach at the point where source data becomes reasoning context.
 
 ---
 
-## 4. Add Workflow Persistence
+## 3. Antagonistic Full-Context Evaluation
 
-Persist the completed workflow execution and its iteration history.
+Add a second adversarial evaluation step at the broader workflow level. This evaluator should review the
+accumulated evidence, findings, plan progress, and current interpretation and challenge whether the broader
+conclusions actually follow from the available information.
 
-The persisted representation should be based on stable execution artifacts rather than blindly serializing every piece 
-of transient LangGraph state.
+It should look for unsupported connections between evidence, ignored contradictions, hidden assumptions,
+excessive confidence, improper generalization, and conclusions that extend beyond what the evidence
+establishes. It should also identify cases where individual evidence items are valid but are being combined
+in a way that does not justify the resulting conclusion.
 
-Persist enough information to reconstruct what happened, including:
+The evidence-level validator determines whether individual evidence summaries faithfully represent their
+sources and actually support their intended purpose. The full-context evaluator determines whether those
+pieces collectively justify the workflow's broader findings and final assessment.
 
-- Workflow execution identifier
-- Request
-- Iteration records
-- Tool activity
-- Evidence and evidence references
-- Repair activity
-- Validation results
-- Findings
-- Final evaluation
-- Final response
-- Workflow status
-- Execution metadata
-
-The generated workflow report can also be persisted, although the structured execution record should remain the 
-authoritative source from which a report can be regenerated.
-
-Persistence should support multiple configured strategies when useful rather than assuming one destination.
-
-**Why here:** By this point the persisted workflow includes both the original execution history and the additional 
-antagonistic validation information. The report has also helped reveal exactly which information is worth retaining.
+Its output should influence final evaluation and should be included in the workflow report so that both the
+supporting reasoning and the attempt to challenge that reasoning are visible.
 
 ---
 
-## 5. Add Continuation / Investigation Context Persistence
+## 4. Workflow Persistence
 
-Define what information should survive specifically to support follow-on questions or continued investigations.
+Persist completed workflow executions and their finalized iteration records. The persisted representation
+should preserve enough structured information to reconstruct what happened without depending on transient
+LangGraph state or application logs.
 
-This does not necessarily need to be identical to the full persisted workflow record.
+Useful persisted information includes the question, workflow identifier, iteration records, tool activity,
+query repairs, evidence references, validation results, findings, final evaluation, final answer, execution
+status, and relevant timing or diagnostic information.
 
-It may include:
+The structured workflow record should remain the authoritative persisted representation of the execution.
+The human-readable workflow report may also be stored, but it should remain something that can be regenerated
+from the structured execution record after the workflow has completed.
 
-- Original request
-- Relevant accumulated context
-- Accepted findings
-- Evidence references
-- Important entities
-- Unresolved questions
-- Final answer
-- Prior iteration summaries
-- Investigation or conversation identifier
+Persistence should support multiple configured implementations where useful. One implementation might
+preserve workflow history for reporting and auditability while another could support analytics or another
+deployment-specific purpose. The workflow should provide stable persistence events without depending on the
+storage technology behind them.
 
-A follow-on request can then attach to an existing investigation rather than beginning from an empty context.
-
-This could also support exposing related prior questions or investigations when appropriate.
-
-**Why separate from workflow persistence:** Audit history and continuation context serve different purposes. Keeping 
-them conceptually separate prevents the entire historical state from automatically becoming prompt context for every 
-follow-on request.
+This provides the durable foundation for auditability, historical inspection, debugging, report generation,
+and reuse of prior workflow results. It also provides stable artifacts that a question-context implementation
+can use when deciding what information should become reusable context.
 
 ---
 
-## 6. Introduce the `AgenticMemoryStrategy` Abstraction
+## 5. Question Context Service
 
-Create a provider-neutral abstraction for operational or experiential memory.
+Introduce a provider-neutral `QuestionContextService` responsible for preserving, relating, and retrieving
+useful context created while the system answers questions. It should be independent of the tools used to
+retrieve authoritative operational or domain data.
 
-The workflow should express needs such as:
+Each user question should initiate its own workflow execution. A follow-up question is therefore a new
+question and a new workflow, not a continuation of the prior workflow. The new question can explicitly
+reference a parent or previous question, while other relationships may also connect it to older questions,
+entities, findings, concepts, or reasoning history.
 
-- Begin an execution memory trace
-- Record finalized iteration experience
-- Complete the trace with an outcome
-- Retrieve relevant prior experience
-- Retrieve similar successful or unsuccessful executions
-- Optionally retrieve useful strategy or tool-use history
+The service should support three related forms of context: short-term question context, long-term question
+context, and reasoning context. These have different lifecycles and retrieval patterns, but their
+relationships are important because useful context often crosses those boundaries.
 
-The abstraction should not expose Neo4j-specific concepts such as Cypher, labels, node IDs, or Neo4j trace objects.
+### Short-Term Question Context
 
-The currently active trace identifier can live in the main graph state so concurrent workflow executions remain 
-independent.
+Short-term context should preserve the interaction history surrounding questions and recent workflows. This
+can include the question itself, the answer, clarifications, related recent questions, and references between
+a new question and the question or workflow that prompted it.
 
-Multiple implementations should be possible, and Agentic Memory should be optional for deployments that do not need it.
+A follow-up question should therefore have its own identity while still being able to reference a parent or
+previous question. That relationship provides an explicit source of context without conflating two distinct
+workflow executions.
 
-**Why after general persistence:** The lifecycle and durable execution model will already be understood. Agentic Memory 
-can then consume those same finalized execution artifacts without influencing the core workflow design.
+Short-term context can also be searched rather than being limited to an exact parent relationship. A new
+question may be related to an earlier question even when it was not asked as a direct follow-up, so recent
+semantic or topical matches can also provide useful context.
+
+This context will be most useful during initialization and early evaluation, where the workflow needs to
+understand what the user is asking now and whether another question provides important context for
+interpreting it.
+
+### Long-Term Question Context
+
+Long-term context should preserve structured concepts and knowledge accumulated across questions and workflow
+executions. This may include entities, concepts, relationships, validated findings, contextual facts,
+provenance, and links between those things and the questions in which they were encountered.
+
+Questions themselves can contribute concepts and entities before the workflow retrieves any source data.
+Evidence summaries and validated findings can contribute additional entities, facts, and relationships as
+the workflow progresses. The resulting context should preserve where information came from so that remembered
+context can still be traced back to the question, workflow, finding, or source that established it.
+
+Long-term context should not replace the authoritative domain data being queried by the workflow. Its purpose
+is to help recognize previously encountered subjects, locate related questions or findings, and identify
+context worth bringing into a new workflow. Claims that matter to the answer can still be verified against
+their authoritative sources when appropriate.
+
+Entity and concept identity should also be managed rather than simply creating a new contextual object every
+time a name appears. Different names, aliases, spellings, or descriptions may refer to the same underlying
+thing. A context implementation should be able to resolve those cases, preserve aliases, and avoid
+fragmenting related context across duplicate identities.
+
+The context model may also use an ontology or schema to give extracted entities and relationships meaningful
+types. This can improve extraction, constrain what relationships are valid, support more precise retrieval,
+and allow deployments to adapt the context model to their own domain.
+
+These capabilities make long-term context useful for questions such as:
+
+- Have we encountered this entity or concept before?
+- Which previous questions involved it?
+- What validated findings were associated with it?
+- Which other entities or concepts were related to it?
+- Which workflows produced those findings?
+- What source or workflow established a remembered fact?
+- Are two differently worded questions connected through the same underlying concepts?
+
+### Reasoning Context
+
+Reasoning context should preserve how previous workflows attempted to answer questions. Each workflow can have
+its own reasoning trace linked to the question that initiated it, while finalized iteration records provide
+natural units for recording what happened during that trace.
+
+Useful reasoning context may include the iteration objective, evaluation and decision information, selected
+action, tool calls, query patterns, repair attempts, failures, evidence obtained, validation results, and
+iteration outcome. The overall result and execution status can complete the reasoning trace when the workflow
+finishes.
+
+Reasoning should also remain connected to the context it operated on. When practical, the system should be
+able to relate a reasoning trace or iteration to the question that triggered it and to important entities or
+concepts encountered during the execution.
+
+Future workflows can retrieve prior reasoning experience when it is relevant to the current question. That
+may identify successful approaches, repeated failure patterns, useful tool sequences, productive query
+strategies, or repairs that succeeded in similar situations.
+
+This is retrieval of previous execution experience rather than model training. Prior reasoning provides
+evidence about approaches that have worked before, while the current workflow remains responsible for
+deciding whether those approaches make sense for the current question.
+
+### Context Relationships and Retrieval
+
+Relationships between context objects should be a first-class part of the service rather than an incidental
+implementation detail.
+
+Useful relationships may include:
+
+- A question references a parent or previous question.
+- A question initiated a particular workflow.
+- A workflow produced particular findings.
+- A workflow contains particular reasoning or iteration records.
+- A question, finding, or evidence summary mentions an entity or concept.
+- A remembered fact originated from a particular finding or source.
+- Entities and concepts are related to one another.
+- A reasoning step interacted with or produced information about an entity.
+- Different questions are related through shared entities, concepts, or findings.
+
+These links create several ways to discover useful context. An explicit parent relationship may be the
+strongest signal for a follow-up question, but semantic similarity, shared entities, graph relationships,
+temporal proximity, provenance, and workflow outcomes may all contribute to relevance.
+
+The service should therefore retrieve structured context based on the needs of the workflow rather than
+simply returning a flat list of semantically similar text. Different implementations may combine vector
+similarity, graph traversal, filtering, temporal information, explicit relationships, or other retrieval
+techniques.
+
+The workflow should also request only the context appropriate to the current stage. Initialization may need
+the parent question and recent related questions. Evaluation may benefit from related entities, concepts,
+and prior findings. Planning or decision-making may benefit from relevant reasoning traces and their
+outcomes.
+
+### Implementation Independence
+
+`QuestionContextService` should describe the capabilities the application needs rather than the storage model
+used to provide them. The interface should not expose Cypher, Neo4j labels, Neo4j node identifiers, vector
+indexes, Neo4j trace classes, or other backend-specific concepts.
+
+A Neo4j implementation can map these capabilities onto Neo4j Agent Memory, including conversation and message
+history, typed entities and relationships, entity resolution, reasoning traces, semantic search, provenance,
+and graph traversal.
+
+Another deployment may implement the same capabilities using a different database or a combination of
+technologies. Some implementations may provide richer relationship or similarity capabilities than others,
+so the abstraction should describe useful context operations without assuming that every backend implements
+them in exactly the same way.
+
+The important boundary is that the workflow depends on question context as an application capability, not on
+Neo4j or any other particular persistence technology.
+
+### Relationship to Workflow Persistence
+
+Workflow persistence and question context should remain separate responsibilities even though they use some
+of the same information.
+
+Workflow persistence answers: what exactly happened during this workflow execution?
+
+Question context answers: what information and relationships from previous questions and executions are
+useful for this question?
+
+The complete persisted workflow remains the authoritative execution history. `QuestionContextService` can
+derive reusable context from questions, finalized iteration records, validated findings, evidence summaries,
+and workflow outcomes while organizing that information for later retrieval.
+
+This feature belongs after basic workflow persistence because stable workflow artifacts provide trustworthy
+inputs for building reusable context without making the context service responsible for preserving the
+authoritative execution record.
 
 ---
 
-## 7. Implement Neo4j Agent Memory
+## 6. Competing Iteration Strategies
 
-Create a Neo4j implementation of `AgenticMemoryStrategy`.
+Allow a single iteration objective to fan out into multiple genuinely different approaches before selecting
+or combining their results. The goal should be to explore meaningfully different strategies rather than
+issuing superficial variations of the same query.
 
-At workflow initialization:
+Possible differences could include alternative query formulations, different graph traversal approaches,
+broad versus narrow retrieval, entity-driven versus relationship-driven investigation, different tool
+sequences, or different decompositions of the same objective.
 
-- Start a reasoning trace
-- Store the resulting trace identifier in the main graph state
+Some strategies may also intentionally use different sources of context. For example, one approach could be
+generated from the current question and evidence alone while another incorporates a successful reasoning
+pattern retrieved from previous workflows.
 
-At each finalized iteration:
+Each branch should produce a result that can be evaluated independently. The fan-in evaluation can then
+select the strongest result, combine complementary evidence, reject weak approaches, or determine that none
+of the strategies adequately satisfied the iteration objective.
 
-- Translate the iteration record into useful reasoning-memory information
-- Record relevant steps
-- Record tool calls and outcomes
-- Preserve failures, repairs, and successful approaches where useful
+The workflow report should expose the competing strategies and their outcomes so that it is possible to see
+what alternatives were attempted and why particular results were retained.
 
-At workflow completion:
-
-- Complete the reasoning trace
-- Record the overall outcome and success or failure state
-
-For future executions, retrieve semantically similar or otherwise relevant prior traces and provide selected experience 
-to the workflow.
-
-That previous experience may help answer questions such as:
-
-- What approaches worked for similar requests?
-- What query patterns repeatedly failed?
-- Which tools were useful?
-- Which repairs succeeded?
-- What strategy produced a good result previously?
-
-**Why here:** This delivers the concrete capability the Tech Director suggested without making Neo4j a foundational 
-requirement of the workflow.
+This comes later because strategy fan-out increases tool use, cost, evaluation complexity, and the number of
+possible failure modes. The antagonistic evaluators and workflow report should exist first so that the
+behavior and value of competing strategies can be inspected.
 
 ---
 
-## 8. Feed Relevant Agentic Memory into Evaluation / Planning
+## 7. Context-Informed Strategy Selection
 
-Once memory is being accumulated, determine where prior experience provides the most value.
+Use accumulated reasoning and question context to improve future strategy generation and selection. Once
+enough trustworthy context has accumulated, the workflow can use previous experience as one input when
+deciding how to approach a new iteration.
 
-The first useful integration point is likely near the early Evaluate or Decide portion of the workflow.
+This could include recognizing approaches that worked for similar questions, avoiding query patterns that
+repeatedly failed, finding repair patterns that succeeded in comparable situations, or identifying useful
+tool sequences associated with successful outcomes.
 
-Relevant memory might include:
+Context relationships can make this stronger than simple similarity matching. A previous workflow may be
+relevant because it involved the same entities, a related concept, a parent question, or a comparable
+reasoning objective even when the original question was phrased very differently.
 
-- Similar successful investigations
-- Similar failed investigations
-- Useful tool sequences
-- Query approaches that succeeded
-- Known failure patterns
-- Repairs that worked
-- Previously discovered limitations
+Historical experience should be treated as evidence rather than authority. The workflow should still be able
+to generate independent alternatives and compare them against context-informed strategies rather than simply
+repeating whatever happened previously.
 
-The model should receive a small, intentionally selected set of relevant experience rather than an unrestricted dump of 
-historical traces.
+The workflow report should indicate when prior context materially influenced strategy selection. This keeps
+adaptive behavior inspectable and makes it possible to evaluate whether context-informed orchestration is
+actually improving results.
 
-The workflow report should indicate when prior experience materially influenced a decision.
-
-**Why separate from storing memory:** First collect trustworthy experience. Then experiment with how much of it improves 
-current reasoning. This makes it possible to evaluate whether Agentic Memory is actually helping rather than assuming 
-that more historical context automatically produces better answers.
-
----
-
-## 9. Add Competing Iteration Strategies
-
-Allow an iteration action to fan out into genuinely different candidate approaches.
-
-Possible competing strategies could include:
-
-- Different query formulations
-- Different graph traversal approaches
-- Broad-first versus narrow-first retrieval
-- Entity-driven versus relationship-driven investigation
-- Different tool sequences
-- Different decomposition of the same investigation objective
-- A strategy informed by Agentic Memory versus a strategy generated from the current context alone
-
-Each strategy should operate independently enough that the fan-out produces meaningful alternatives rather than several 
-superficial variations of the same query.
-
-The results then fan back into an evaluator that can:
-
-- Select the strongest result
-- Combine complementary evidence
-- Reject weak strategies
-- Record why one approach was preferable
-
-**Why later:** This has potentially large upside, but it also multiplies tool calls, cost, evaluation complexity, and 
-possible failure modes. The antagonistic evaluators, report, and persistence infrastructure should exist first so the 
-behavior of competing strategies can actually be measured and inspected.
-
----
-
-## 10. Evaluate and Refine Strategy Selection
-
-Once competing strategies and Agentic Memory both exist, begin using execution history to improve which strategies are 
-generated or selected.
-
-Possible uses include:
-
-- Prefer strategies that historically succeed for similar problems
-- Avoid strategies with repeated repair or failure patterns
-- Adjust fan-out width based on task difficulty
-- Generate alternatives specifically because previous approaches failed
-- Compare memory-informed strategies against independently generated strategies
-- Track which strategies contribute useful evidence rather than merely completing successfully
-
-This can eventually move the system from simple retrieval of prior experience toward deliberate experience-informed 
-orchestration.
-
-**Why last:** This is where several earlier capabilities begin reinforcing one another. It requires reliable execution 
-records, evaluation, persistence, memory, and competing strategies before there is enough trustworthy information to 
-make adaptive strategy selection meaningful.
+This is intentionally later in the roadmap because it depends on trustworthy validation, durable workflow
+records, accumulated question context, and competing-strategy infrastructure. At that point, prior executions
+can begin improving future orchestration rather than merely being retained.
 
 ---
 
 # Rough Priority
 
-**Highest immediate bang for buck**
+### Immediate Value and Reliability
 
-1. Workflow report
-2. Antagonistic evidence-summary evaluation
-3. Antagonistic full-context evaluation
+1. Workflow Report
+2. Antagonistic Evidence Validation
+3. Antagonistic Full-Context Evaluation
 
-**Foundation for durable system behavior**
+### Durable Workflow and Context
 
-4. Workflow persistence
-5. Continuation / investigation context
-6. `AgenticMemoryStrategy`
-7. Neo4j Agent Memory
+4. Workflow Persistence
+5. Question Context Service
 
-**Higher-order agentic improvements**
+### More Advanced Agentic Behavior
 
-8. Use prior experience during reasoning
-9. Competing iteration strategies
-10. Experience-informed strategy selection
+6. Competing Iteration Strategies
+7. Context-Informed Strategy Selection
