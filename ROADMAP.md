@@ -1,8 +1,8 @@
 # Agentic Workflow Roadmap
 
-The following roadmap represents what I currently see as the most necessary and useful features to build on the
-minimum viable product and turn it into a system that is genuinely useful for the mission. The priorities are
-centered on making the workflow produce results that are as accurate, well-supported, and resistant to 
+The following roadmap represents what I currently see as the most necessary and useful features to build on 
+the minimum viable product and turn it into a system that is genuinely useful for the mission. The priorities 
+are centered on making the workflow produce results that are as accurate, well-supported, and resistant to 
 hallucination as possible, while also making those results understandable and actionable.
 
 This ordering is not intended to be rigid. Urgent mission needs should be inserted into the roadmap at the
