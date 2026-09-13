@@ -109,6 +109,8 @@ class GraphRagSettings(BaseSettings):
         llm_timeout_seconds: End-to-end timeout for one provider request.
         llm_num_retries: Number of transient provider retries performed by
             LiteLLM.
+        node_retry_max_attempts: Maximum LangGraph attempts, including the
+            first attempt, for retryable nodes.
         graph_db_mcp_url: HTTP URL of the MCP service that exposes graph tools.
         graph_db_username: Username used when authenticating graph-tool
             requests.
@@ -141,6 +143,12 @@ class GraphRagSettings(BaseSettings):
     llm_max_tokens: int = Field(default=4096, ge=1)
     llm_timeout_seconds: float = Field(default=60.0, gt=0.0)
     llm_num_retries: int = Field(default=2, ge=0)
+
+    # LangGraph node retry configuration
+    node_retry_max_attempts: int = Field(default=2, ge=1)
+    node_retry_initial_interval: float = Field(default=0.5, gt=0.0)
+    node_retry_backoff_factor: float = Field(default=2.0, ge=1.0)
+    node_retry_max_interval: float = Field(default=8.0, gt=0.0)
 
     # Graph-tool service configuration
     graph_db_mcp_url: AnyHttpUrl

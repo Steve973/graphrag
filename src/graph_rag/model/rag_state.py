@@ -12,14 +12,14 @@ from pydantic import Field, BeforeValidator, model_validator
 
 from graph_rag.model.base import WorkflowStatus, ContractModel, NonEmptyStr
 from graph_rag.model.iteration import IterationRecord, IterationRecordBuilder
-from graph_rag.model.plan import Plan
+from graph_rag.model.plan import Plan, PlanUpdate
 from graph_rag.model.question import (
     Question,
     FinalAnswer
 )
 from graph_rag.model.supporting_data import EvidenceSummary, EvidenceData
 from graph_rag.model.tool_operations import AvailableTool
-from graph_rag.model.workflow import WorkflowEvaluation
+from graph_rag.model.workflow import EvaluationResult, WorkflowError, WorkflowEvaluation
 from graph_rag.utils import scalar_to_list
 
 
@@ -178,12 +178,32 @@ class GraphRagState(ContractModel):
             "List of iteration records, in order of iteration."
         ),
     )
+    errors: Annotated[list[WorkflowError], operator.add] = Field(
+        default_factory=list,
+        description="Cumulative workflow-level failures, including node exhaustion.",
+    )
     latest_evaluation: WorkflowEvaluation | None = Field(
         default=None,
         description=(
             "Most recent evaluation of the current plan revision, or null before any "
             "evaluation."
         ),
+    )
+    pending_evaluation: EvaluationResult | None = Field(
+        default=None,
+        description="Evaluation awaiting deterministic application.",
+    )
+    pending_plan_update: PlanUpdate | None = Field(
+        default=None,
+        description="Plan update awaiting deterministic application.",
+    )
+    pending_evidence_summaries: list[EvidenceSummary] = Field(
+        default_factory=list,
+        description="Evidence summaries awaiting iteration finalization.",
+    )
+    current_evidence_data: EvidenceData | None = Field(
+        default=None,
+        description="Raw evidence produced by the current tool action.",
     )
     evidence_data: Annotated[
         list[EvidenceData],

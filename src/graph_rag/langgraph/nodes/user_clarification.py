@@ -5,6 +5,7 @@ from graph_rag.model.base import WorkflowStatus
 from graph_rag.model.question import (
     UserClarificationResponse,
     UserClarificationEvaluationResult,
+    UserClarificationRequest,
 )
 from graph_rag.model.rag_state import GraphRagState
 
@@ -71,19 +72,17 @@ async def user_clarification(
 
     # First node in the subflow would be to tell the LLM to formulate a
     # clarification request.
-    clarification_request = await node_runner.invoke_agent(
+    clarification_request = await node_runner.invoke_structured(
         messages=[{"role": "user", "content": "Hello!"}],
-        tools=[],
-        parallel_tool_calls=False,
-        response_model=UserClarificationResponse,
+        response_model=UserClarificationRequest,
     )
 
     # First node also invokes the interrupt to interact with the user.
     response = interrupt(
         {
             "type": "user_clarification",
-            "question": clarification_request.get("question"),
-            "context": clarification_request.get("context"),
+            "question": clarification_request.user_message,
+            "reason": clarification_request.rationale,
         }
     )
 
@@ -92,14 +91,12 @@ async def user_clarification(
     ###################################################################
 
     # Second node conducts an evaluation of the user clarification response.
-    evaluation = await node_runner.invoke_agent(
-        messages=[{"role": "user", "content": "Hello!"}],
-        tools=[],
-        parallel_tool_calls=False,
+    evaluation = await node_runner.invoke_structured(
+        messages=[{"role": "user", "content": response}],
         response_model=UserClarificationEvaluationResult,
     )
 
-    resolved = evaluation.get("resolution", False)
+    resolved = evaluation.resolved
     if not resolved:
         return Command(
             update={

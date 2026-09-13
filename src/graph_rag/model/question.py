@@ -63,7 +63,7 @@ class WorkflowLimits(ContractModel):
     )
 
 
-class ClarificationRequest(ContractModel):
+class UserClarificationRequest(ContractModel):
     rationale: NonEmptyStr = Field(
         description=(
             "Rationale for requesting clarification. This should explain the need for "

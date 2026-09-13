@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from pymongo import MongoClient
 
-from graph_rag.config.graph_rag_config import GraphRagSettings
+if TYPE_CHECKING:
+    from graph_rag.config.graph_rag_config import GraphRagSettings
 
 
 class CheckpointerType(StrEnum):
