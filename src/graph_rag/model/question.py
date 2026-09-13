@@ -63,11 +63,61 @@ class WorkflowLimits(ContractModel):
     )
 
 
-FinalAnswerStatus: TypeAlias = Literal[
-    WorkflowStatus.COMPLETE,
-    WorkflowStatus.PARTIAL,
-    WorkflowStatus.FAILED,
-]
+class ClarificationRequest(ContractModel):
+    rationale: NonEmptyStr = Field(
+        description=(
+            "Rationale for requesting clarification. This should explain the need for "
+            "clarification from the user. E.g., why is the question too broad, what is "
+            "specifically ambiguous or missing, or what conditions have arisen that "
+            "prohibit deterministic and accurate progression of the workflow?"
+        )
+    )
+    user_message: NonEmptyStr = Field(
+        description=(
+            "A message to the user that prompts for the specific clarification needed "
+            "to resolve the uncertainty. This message should ideally include suggestions "
+            "or examples of the type of information that the LLM needs to resolve the "
+            "uncertainty in order to proceed."
+        )
+    )
+
+
+class UserClarificationResponse(ContractModel):
+    response: NonEmptyStr = Field(
+        description=(
+            "User response to a clarification request. This should be requested when "
+            "the LLM needs to clarify something that may be ambiguous or too broad as "
+            "phrased in the question, or when accumulated evidence shows that "
+            "proceeding without further clarification is difficult or may stray from "
+            "the original question."
+        )
+    )
+
+
+class UserClarificationEvaluationResult(ContractModel):
+    resolved: bool = Field(
+        description=(
+            "Whether the user clarification response resolved the uncertainty. A "
+            "value of 'False' requires an accompanying explanation in the "
+            "'remaining_information_needed' field. Both 'True' and 'False' values "
+            "require an accompanying rationale that explains this determination in "
+            "that field."
+        )
+    )
+    rationale: NonEmptyStr = Field(
+        description=(
+            "Rationale for the user clarification response. This explains why the "
+            "user clarification response either resolved, or failed to resolve, the "
+            "uncertainty."
+        )
+    )
+    remaining_information_needed: str | None = Field(
+        default=None,
+        description=(
+            "Additional information needed to resolve the uncertainty. This field is "
+            "required when the 'resolved' field is 'False'."
+        )
+    )
 
 
 class Question(ContractModel):
@@ -122,6 +172,13 @@ class Question(ContractModel):
 
     def simple_string(self) -> str:
         return f"Question: {self.text}"
+
+
+FinalAnswerStatus: TypeAlias = Literal[
+    WorkflowStatus.COMPLETE,
+    WorkflowStatus.PARTIAL,
+    WorkflowStatus.FAILED,
+]
 
 
 class FinalAnswer(ContractModel):

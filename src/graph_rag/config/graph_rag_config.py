@@ -19,6 +19,7 @@ from pydantic_settings import (
 )
 
 from graph_rag.model.base import NonEmptyStr
+from graph_rag.service.checkpointer import CheckpointerType
 
 
 # =============================================================================
@@ -146,6 +147,11 @@ class GraphRagSettings(BaseSettings):
     graph_db_username: NonEmptyStr
     graph_db_password: SecretStr
     graph_db_database: NonEmptyStr
+
+    # Checkpointer configuration
+    checkpointer_type: CheckpointerType = Field(default=CheckpointerType.MEMORY)
+    mongodb_uri: str | None = None
+    mongodb_database: str | None = None
 
     @classmethod
     def settings_customise_sources(

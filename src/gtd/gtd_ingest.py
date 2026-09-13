@@ -1,162 +1,278 @@
+"""Load graph-shaped GTD CSV files into Neo4j using ordered ``LOAD CSV`` passes."""
+
 from __future__ import annotations
 
-import csv
+import json
 from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from urllib.parse import quote
+
+from .gtd_prepare import GtdPreparationResult, prepare_gtd_csv
+from .gtd_schema import GTD_COLUMNS, cypher_property_expression
 
 if TYPE_CHECKING:
     from neo4j import Driver
 
+CONSTRAINTS = (
+    "CREATE CONSTRAINT incident_eventid IF NOT EXISTS FOR (n:Incident) REQUIRE n.eventid IS UNIQUE",
+    "CREATE CONSTRAINT gtd_region_code IF NOT EXISTS FOR (n:GTDRegion) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_country_code IF NOT EXISTS FOR (n:GTDCountry) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_area_id IF NOT EXISTS FOR (n:GeopoliticalArea) REQUIRE n.area_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_locality_id IF NOT EXISTS FOR (n:GTDLocality) REQUIRE n.locality_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_attack_code IF NOT EXISTS FOR (n:AttackType) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_target_type_code IF NOT EXISTS FOR (n:TargetType) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_target_subtype_code IF NOT EXISTS FOR (n:TargetSubtype) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_weapon_type_code IF NOT EXISTS FOR (n:WeaponType) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_weapon_subtype_code IF NOT EXISTS FOR (n:WeaponSubtype) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_claim_mode_code IF NOT EXISTS FOR (n:ClaimMode) REQUIRE n.code IS UNIQUE",
+    "CREATE CONSTRAINT gtd_group_id IF NOT EXISTS FOR (n:PerpetratorGroup) REQUIRE n.group_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_target_id IF NOT EXISTS FOR (n:TargetObservation) REQUIRE n.target_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_weapon_use_id IF NOT EXISTS FOR (n:WeaponUse) REQUIRE n.weapon_use_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_attribution_id IF NOT EXISTS FOR (n:PerpetratorAttribution) REQUIRE n.attribution_id IS UNIQUE",
+    "CREATE CONSTRAINT gtd_claim_id IF NOT EXISTS FOR (n:Claim) REQUIRE n.claim_id IS UNIQUE",
+)
 
-INCIDENT_UNIQUE_CONSTRAINTS = [
-    "CREATE CONSTRAINT incident_eventid IF NOT EXISTS FOR (i:Incident) REQUIRE i.eventid IS UNIQUE",
-    "CREATE CONSTRAINT country_name IF NOT EXISTS FOR (n:Country) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT region_name IF NOT EXISTS FOR (n:Region) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT province_name IF NOT EXISTS FOR (n:Province) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT city_name IF NOT EXISTS FOR (n:City) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT attack_type_name IF NOT EXISTS FOR (n:AttackType) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT target_type_name IF NOT EXISTS FOR (n:TargetType) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT target_subtype_name IF NOT EXISTS FOR (n:TargetSubType) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT weapon_type_name IF NOT EXISTS FOR (n:WeaponType) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT weapon_subtype_name IF NOT EXISTS FOR (n:WeaponSubType) REQUIRE n.name IS UNIQUE",
-    "CREATE CONSTRAINT group_name IF NOT EXISTS FOR (n:Group) REQUIRE n.name IS UNIQUE",
-]
-
-INCIDENT_INDEXES = [
-    "CREATE INDEX incident_year IF NOT EXISTS FOR (i:Incident) ON (i.iyear)",
-    "CREATE INDEX incident_date IF NOT EXISTS FOR (i:Incident) ON (i.incident_date)",
-]
+INDEXES = (
+    "CREATE INDEX gtd_incident_year IF NOT EXISTS FOR (n:GTDIncident) ON (n.iyear)",
+    "CREATE INDEX gtd_incident_date IF NOT EXISTS FOR (n:GTDIncident) ON (n.incident_date)",
+    "CREATE INDEX gtd_country_name IF NOT EXISTS FOR (n:GTDCountry) ON (n.name)",
+    "CREATE INDEX gtd_group_name IF NOT EXISTS FOR (n:PerpetratorGroup) ON (n.name)",
+)
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class GTDBatchResult:
     rows_seen: int
     incidents_written: int
+    source_sha256: str
+    prepared_files: dict[str, int]
+    reconciliation: dict[str, int]
 
 
-def _normalize_value(value: Any) -> Any:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        cleaned = value.strip()
-        if cleaned == "":
-            return None
-        lower = cleaned.lower()
-        if lower in {"na", "n/a", "null", "none", "nan"}:
-            return None
-        if cleaned.isdigit():
-            try:
-                return int(cleaned)
-            except ValueError:
-                return cleaned
-        try:
-            if "." in cleaned:
-                return float(cleaned)
-        except ValueError:
-            pass
-        return cleaned
-    return value
+@dataclass(frozen=True, slots=True)
+class _LoadStep:
+    filename: str
+    body: str
 
 
-def _make_date(parts: dict[str, Any]) -> str | None:
-    year = parts.get("iyear")
-    month = parts.get("imonth")
-    day = parts.get("iday")
-    if not year:
-        return None
-    try:
-        month_int = int(month or 1)
-        day_int = int(day or 1)
-        return date(int(year), month_int, day_int).isoformat()
-    except ValueError:
-        return None
+def _incident_body() -> str:
+    assignments = [
+        f"i.`{column}` = {cypher_property_expression(column)}" for column in GTD_COLUMNS
+    ]
+    assignments.extend(
+        (
+            "i.incident_date = CASE trim(row.incident_date) WHEN '' THEN null ELSE date(trim(row.incident_date)) END",
+            "i.date_precision = trim(row.date_precision)",
+            "i.source_row_number = toInteger(row.source_row_number)",
+            "i.source_sha256 = $source_sha256",
+        )
+    )
+    return (
+        "MERGE (i:GTD:Incident:GTDIncident {eventid: trim(row.eventid)})\n"
+        "SET " + ",\n    ".join(assignments)
+    )
 
 
-def _entity(value: Any) -> dict[str, Any] | None:
-    normalized = _normalize_value(value)
-    if normalized is None:
-        return None
-    return {"name": normalized}
+NODE_STEPS = (
+    _LoadStep(
+        "incidents.csv",
+        _incident_body(),
+    ),
+    _LoadStep(
+        "regions.csv",
+        "MERGE (n:GTD:GTDReference:GeographicArea:Region:GTDRegion {code: toInteger(row.code)}) "
+        "SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "countries.csv",
+        "MERGE (n:GTD:GTDReference:GeographicArea:Country:GTDCountry {code: toInteger(row.code)}) "
+        "SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "geopolitical_areas.csv",
+        "MERGE (n:GTD:GeographicArea:GeopoliticalArea {area_id: row.area_id}) SET n.name = trim(row.name), "
+        "n.country_code = toIntegerOrNull(row.country_code)",
+    ),
+    _LoadStep(
+        "localities.csv",
+        "MERGE (n:GTD:GeographicArea:Locality:GTDLocality {locality_id: row.locality_id}) SET n.name = trim(row.name), "
+        "n.country_code = toIntegerOrNull(row.country_code), n.area_id = CASE trim(row.area_id) "
+        "WHEN '' THEN null ELSE row.area_id END",
+    ),
+    _LoadStep(
+        "attack_types.csv",
+        "MERGE (n:GTD:GTDReference:AttackType {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "target_types.csv",
+        "MERGE (n:GTD:GTDReference:TargetType {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "target_subtypes.csv",
+        "MERGE (n:GTD:GTDReference:TargetSubtype {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "weapon_types.csv",
+        "MERGE (n:GTD:GTDReference:WeaponType {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "weapon_subtypes.csv",
+        "MERGE (n:GTD:GTDReference:WeaponSubtype {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "claim_modes.csv",
+        "MERGE (n:GTD:GTDReference:ClaimMode {code: toInteger(row.code)}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "groups.csv",
+        "MERGE (n:GTD:PerpetratorGroup {group_id: row.group_id}) SET n.name = trim(row.name)",
+    ),
+    _LoadStep(
+        "targets.csv",
+        "MERGE (n:GTD:GTDObservation:TargetObservation {target_id: row.target_id}) SET n.slot = toInteger(row.slot), "
+        "n.target = CASE trim(row.target) WHEN '' THEN null ELSE trim(row.target) END, "
+        "n.corporation = CASE trim(row.corporation) WHEN '' THEN null ELSE trim(row.corporation) END",
+    ),
+    _LoadStep(
+        "weapon_uses.csv",
+        "MERGE (n:GTD:GTDObservation:WeaponUse {weapon_use_id: row.weapon_use_id}) SET n.slot = toInteger(row.slot)",
+    ),
+    _LoadStep(
+        "attributions.csv",
+        "MERGE (n:GTD:GTDObservation:PerpetratorAttribution {attribution_id: row.attribution_id}) "
+        "SET n.slot = toInteger(row.slot), "
+        "n.reported_group_name = CASE trim(row.group_name) WHEN '' THEN null ELSE trim(row.group_name) END, "
+        "n.subgroup_name = CASE trim(row.subgroup_name) WHEN '' THEN null ELSE trim(row.subgroup_name) END, "
+        "n.uncertain = toIntegerOrNull(row.uncertain)",
+    ),
+    _LoadStep(
+        "claims.csv",
+        "MERGE (n:GTD:GTDObservation:Claim {claim_id: row.claim_id}) SET n.slot = toInteger(row.slot), "
+        "n.claimed = toIntegerOrNull(row.claimed)",
+    ),
+)
+
+RELATIONSHIP_STEPS = (
+    _LoadStep(
+        "incident_regions.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:GTDRegion {code: toInteger(row.region_code)}) "
+        "MERGE (a)-[:IN_GTD_REGION]->(b)",
+    ),
+    _LoadStep(
+        "incident_countries.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:GTDCountry {code: toInteger(row.country_code)}) "
+        "MERGE (a)-[:OCCURRED_IN_COUNTRY]->(b)",
+    ),
+    _LoadStep(
+        "country_regions.csv",
+        "MATCH (a:GTDCountry {code: toInteger(row.country_code)}), (b:GTDRegion {code: toInteger(row.region_code)}) "
+        "MERGE (a)-[:IN_GTD_REGION]->(b)",
+    ),
+    _LoadStep(
+        "incident_areas.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:GeopoliticalArea {area_id: row.area_id}) "
+        "MERGE (a)-[:OCCURRED_IN_AREA]->(b)",
+    ),
+    _LoadStep(
+        "incident_localities.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:GTDLocality {locality_id: row.locality_id}) "
+        "MERGE (a)-[:OCCURRED_IN_LOCALITY]->(b)",
+    ),
+    _LoadStep(
+        "incident_attacks.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:AttackType {code: toInteger(row.attack_type_code)}) "
+        "MERGE (a)-[:CLASSIFIED_AS_ATTACK {slot: toInteger(row.slot)}]->(b)",
+    ),
+    _LoadStep(
+        "incident_targets.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:TargetObservation {target_id: row.target_id}) "
+        "MERGE (a)-[:HAS_TARGET]->(b)",
+    ),
+    _LoadStep(
+        "target_types_rel.csv",
+        "MATCH (a:TargetObservation {target_id: row.target_id}), (b:TargetType {code: toInteger(row.type_code)}) "
+        "MERGE (a)-[:HAS_TARGET_TYPE]->(b)",
+    ),
+    _LoadStep(
+        "target_subtypes_rel.csv",
+        "MATCH (a:TargetObservation {target_id: row.target_id}), (b:TargetSubtype {code: toInteger(row.subtype_code)}) "
+        "MERGE (a)-[:HAS_TARGET_SUBTYPE]->(b)",
+    ),
+    _LoadStep(
+        "target_nationalities.csv",
+        "MATCH (a:TargetObservation {target_id: row.target_id}), (b:GTDCountry {code: toInteger(row.country_code)}) "
+        "MERGE (a)-[:HAS_NATIONALITY]->(b)",
+    ),
+    _LoadStep(
+        "incident_weapon_uses.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:WeaponUse {weapon_use_id: row.weapon_use_id}) "
+        "MERGE (a)-[:USED_WEAPON]->(b)",
+    ),
+    _LoadStep(
+        "weapon_types_rel.csv",
+        "MATCH (a:WeaponUse {weapon_use_id: row.weapon_use_id}), (b:WeaponType {code: toInteger(row.type_code)}) "
+        "MERGE (a)-[:HAS_WEAPON_TYPE]->(b)",
+    ),
+    _LoadStep(
+        "weapon_subtypes_rel.csv",
+        "MATCH (a:WeaponUse {weapon_use_id: row.weapon_use_id}), (b:WeaponSubtype {code: toInteger(row.subtype_code)}) "
+        "MERGE (a)-[:HAS_WEAPON_SUBTYPE]->(b)",
+    ),
+    _LoadStep(
+        "incident_attributions.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:PerpetratorAttribution {attribution_id: row.attribution_id}) "
+        "MERGE (a)-[:HAS_ATTRIBUTION]->(b)",
+    ),
+    _LoadStep(
+        "attribution_groups.csv",
+        "MATCH (a:PerpetratorAttribution {attribution_id: row.attribution_id}), "
+        "(b:PerpetratorGroup {group_id: row.group_id}) MERGE (a)-[:ATTRIBUTES_TO]->(b)",
+    ),
+    _LoadStep(
+        "incident_claims.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:Claim {claim_id: row.claim_id}) MERGE (a)-[:HAS_CLAIM]->(b)",
+    ),
+    _LoadStep(
+        "claim_modes_rel.csv",
+        "MATCH (a:Claim {claim_id: row.claim_id}), (b:ClaimMode {code: toInteger(row.mode_code)}) "
+        "MERGE (a)-[:HAS_CLAIM_MODE]->(b)",
+    ),
+    _LoadStep(
+        "claim_groups.csv",
+        "MATCH (a:Claim {claim_id: row.claim_id}), (b:PerpetratorGroup {group_id: row.group_id}) "
+        "MERGE (a)-[:CLAIMED_BY]->(b)",
+    ),
+    _LoadStep(
+        "related_incidents.csv",
+        "MATCH (a:GTDIncident {eventid: row.eventid}), (b:GTDIncident {eventid: row.related_eventid}) "
+        "MERGE (a)-[:RELATED_TO]->(b)",
+    ),
+    _LoadStep(
+        "geopolitical_areas.csv",
+        "MATCH (a:GeopoliticalArea {area_id: row.area_id}), (b:GTDCountry {code: toInteger(row.country_code)}) "
+        "MERGE (a)-[:WITHIN_COUNTRY]->(b)",
+    ),
+    _LoadStep(
+        "localities.csv",
+        "MATCH (a:GTDLocality {locality_id: row.locality_id}), (b:GTDCountry {code: toInteger(row.country_code)}) "
+        "MERGE (a)-[:WITHIN_COUNTRY]->(b)",
+    ),
+    _LoadStep(
+        "localities.csv",
+        "WITH row WHERE trim(row.area_id) <> '' MATCH (a:GTDLocality {locality_id: row.locality_id}), "
+        "(b:GeopoliticalArea {area_id: row.area_id}) MERGE (a)-[:WITHIN_AREA]->(b)",
+    ),
+)
 
 
-def _slot_entities(values: Iterable[Any]) -> list[dict[str, Any]]:
-    entities: list[dict[str, Any]] = []
-    for value in values:
-        entity = _entity(value)
-        if entity is not None:
-            entities.append(entity)
-    return entities
-
-
-def build_incident_payload(row: dict[str, Any], *, source_row_number: int | None = None) -> dict[str, Any]:
-    normalized = {key: _normalize_value(value) for key, value in row.items()}
-    eventid = normalized.get("eventid")
-    if eventid is None:
-        raise ValueError("Row is missing eventid")
-
-    incident = {
-        key: value
-        for key, value in normalized.items()
-        if value is not None and key not in {
-            "country_txt",
-            "region_txt",
-            "provstate",
-            "city",
-            "attacktype1_txt",
-            "attacktype2_txt",
-            "attacktype3_txt",
-            "targtype1_txt",
-            "targtype2_txt",
-            "targtype3_txt",
-            "targsubtype1_txt",
-            "targsubtype2_txt",
-            "targsubtype3_txt",
-            "weaptype1_txt",
-            "weaptype2_txt",
-            "weaptype3_txt",
-            "weapsubtype1_txt",
-            "weapsubtype2_txt",
-            "weapsubtype3_txt",
-            "gname",
-            "gname2",
-            "gname3",
-            "gname4",
-        }
-    }
-    incident["incident_date"] = _make_date(normalized)
-    if source_row_number is not None:
-        incident["source_row_number"] = source_row_number
-
-    return {
-        "incident": incident,
-        "country": _entity(normalized.get("country_txt")),
-        "region": _entity(normalized.get("region_txt")),
-        "province": _entity(normalized.get("provstate")),
-        "city": _entity(normalized.get("city")),
-        "attack_types": _slot_entities(
-            [normalized.get("attacktype1_txt"), normalized.get("attacktype2_txt"), normalized.get("attacktype3_txt")]
-        ),
-        "target_types": _slot_entities(
-            [normalized.get("targtype1_txt"), normalized.get("targtype2_txt"), normalized.get("targtype3_txt")]
-        ),
-        "target_subtypes": _slot_entities(
-            [normalized.get("targsubtype1_txt"), normalized.get("targsubtype2_txt"), normalized.get("targsubtype3_txt")]
-        ),
-        "weapon_types": _slot_entities(
-            [normalized.get("weaptype1_txt"), normalized.get("weaptype2_txt"), normalized.get("weaptype3_txt")]
-        ),
-        "weapon_subtypes": _slot_entities(
-            [normalized.get("weapsubtype1_txt"), normalized.get("weapsubtype2_txt"), normalized.get("weapsubtype3_txt")]
-        ),
-        "groups": _slot_entities([normalized.get("gname"), normalized.get("gname2"), normalized.get("gname3"), normalized.get("gname4")]),
-    }
-
-
-def _chunked(items: list[dict[str, Any]], size: int) -> Iterable[list[dict[str, Any]]]:
-    for index in range(0, len(items), size):
-        yield items[index : index + size]
+def _load_query(body: str, batch_size: int) -> str:
+    return (
+        "LOAD CSV WITH HEADERS FROM $csv_url AS row\n"
+        "CALL (row) {\n"
+        f"  {body}\n"
+        f"}} IN TRANSACTIONS OF {batch_size} ROWS"
+    )
 
 
 class GTDIngestor:
@@ -170,91 +286,117 @@ class GTDIngestor:
 
     def prepare_schema(self) -> None:
         with self._driver.session() as session:
-            for statement in INCIDENT_UNIQUE_CONSTRAINTS + INCIDENT_INDEXES:
+            for statement in (*CONSTRAINTS, *INDEXES):
                 session.run(statement).consume()
 
     def wipe(self) -> None:
+        """Delete the existing graph, matching the command's explicit ``--wipe`` contract."""
+
         with self._driver.session() as session:
             session.run("MATCH (n) DETACH DELETE n").consume()
 
-    def ingest_csv(self, csv_path: Path, *, batch_size: int = 500) -> GTDBatchResult:
-        rows: list[dict[str, Any]] = []
-        rows_seen = 0
-        incidents_written = 0
-
-        with csv_path.open("r", encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            for row_number, row in enumerate(reader, start=2):
-                payload = build_incident_payload(row, source_row_number=row_number)
-                rows.append(payload)
-                rows_seen += 1
-                if len(rows) >= batch_size:
-                    incidents_written += self._write_batch(rows)
-                    rows.clear()
-
-        if rows:
-            incidents_written += self._write_batch(rows)
-
-        return GTDBatchResult(rows_seen=rows_seen, incidents_written=incidents_written)
-
-    def _write_batch(self, batch: list[dict[str, Any]]) -> int:
-        query = """
-        UNWIND $rows AS row
-        MERGE (i:Incident {eventid: row.incident.eventid})
-        SET i += row.incident
-
-        FOREACH (item IN CASE WHEN row.country IS NULL THEN [] ELSE [row.country] END |
-          MERGE (n:Country {name: item.name})
-          MERGE (i)-[:OCCURRED_IN_COUNTRY]->(n)
-        )
-        FOREACH (item IN CASE WHEN row.region IS NULL THEN [] ELSE [row.region] END |
-          MERGE (n:Region {name: item.name})
-          MERGE (i)-[:OCCURRED_IN_REGION]->(n)
-        )
-        FOREACH (item IN CASE WHEN row.province IS NULL THEN [] ELSE [row.province] END |
-          MERGE (n:Province {name: item.name})
-          MERGE (i)-[:OCCURRED_IN_PROVINCE]->(n)
-        )
-        FOREACH (item IN CASE WHEN row.city IS NULL THEN [] ELSE [row.city] END |
-          MERGE (n:City {name: item.name})
-          MERGE (i)-[:OCCURRED_IN_CITY]->(n)
-        )
-        FOREACH (item IN row.attack_types |
-          MERGE (n:AttackType {name: item.name})
-          MERGE (i)-[:HAS_ATTACK_TYPE]->(n)
-        )
-        FOREACH (item IN row.target_types |
-          MERGE (n:TargetType {name: item.name})
-          MERGE (i)-[:HAS_TARGET_TYPE]->(n)
-        )
-        FOREACH (item IN row.target_subtypes |
-          MERGE (n:TargetSubType {name: item.name})
-          MERGE (i)-[:HAS_TARGET_SUBTYPE]->(n)
-        )
-        FOREACH (item IN row.weapon_types |
-          MERGE (n:WeaponType {name: item.name})
-          MERGE (i)-[:USED_WEAPON_TYPE]->(n)
-        )
-        FOREACH (item IN row.weapon_subtypes |
-          MERGE (n:WeaponSubType {name: item.name})
-          MERGE (i)-[:USED_WEAPON_SUBTYPE]->(n)
-        )
-        FOREACH (item IN row.groups |
-          MERGE (n:Group {name: item.name})
-          MERGE (i)-[:ATTRIBUTED_TO]->(n)
-        )
-        """
+    def ingest_prepared(
+        self,
+        prepared: GtdPreparationResult,
+        *,
+        import_uri: str,
+        batch_size: int = 1_000,
+    ) -> GTDBatchResult:
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than zero")
+        uri_prefix = import_uri.rstrip("/")
         with self._driver.session() as session:
-            result = session.execute_write(lambda tx: tx.run(query, rows=batch).consume())
-        return len(batch)
+            for step in (*NODE_STEPS, *RELATIONSHIP_STEPS):
+                if prepared.files.get(step.filename, 0) == 0:
+                    continue
+                csv_url = f"{uri_prefix}/{quote(step.filename)}"
+                session.run(
+                    _load_query(step.body, batch_size),
+                    csv_url=csv_url,
+                    source_sha256=prepared.source_sha256,
+                ).consume()
+            reconciliation = session.run(
+                """
+                CALL {
+                MATCH (i:GTDIncident {source_sha256: $source_sha256})
+                RETURN count(i) AS incidents
+                }
+                CALL {
+                MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_TARGET]->(n:TargetObservation)
+                RETURN count(n) AS targets
+                }
+                CALL {
+                MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:USED_WEAPON]->(n:WeaponUse)
+                RETURN count(n) AS weapon_uses
+                }
+                CALL {
+                MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_ATTRIBUTION]->(n:PerpetratorAttribution)
+                RETURN count(n) AS attributions
+                }
+                CALL {
+                MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_CLAIM]->(n:Claim)
+                RETURN count(n) AS claims
+                }
+                RETURN incidents, targets, weapon_uses, attributions, claims
+                """,
+                source_sha256=prepared.source_sha256,
+            ).single(strict=True)
+        counts = dict(reconciliation)
+        expected = {
+            "incidents": prepared.source_rows,
+            "targets": prepared.files["targets.csv"],
+            "weapon_uses": prepared.files["weapon_uses.csv"],
+            "attributions": prepared.files["attributions.csv"],
+            "claims": prepared.files["claims.csv"],
+        }
+        differences = {
+            name: (expected[name], counts[name])
+            for name in expected
+            if expected[name] != counts[name]
+        }
+        if differences:
+            details = ", ".join(
+                f"{name}: expected {wanted}, found {actual}"
+                for name, (wanted, actual) in differences.items()
+            )
+            raise RuntimeError(f"GTD reconciliation failed: {details}")
+        return GTDBatchResult(
+            rows_seen=prepared.source_rows,
+            incidents_written=counts["incidents"],
+            source_sha256=prepared.source_sha256,
+            prepared_files=prepared.files,
+            reconciliation=counts,
+        )
 
 
-def load_gtd(csv_path: Path, uri: str, user: str, password: str, *, batch_size: int = 500, wipe: bool = False) -> GTDBatchResult:
+def read_preparation_manifest(output_dir: Path) -> GtdPreparationResult:
+    data = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+    data["extra_columns"] = tuple(data.get("extra_columns", ()))
+    return GtdPreparationResult(**data)
+
+
+def load_gtd(
+    csv_path: Path,
+    uri: str,
+    user: str,
+    password: str,
+    *,
+    import_dir: Path,
+    import_uri: str,
+    batch_size: int = 1_000,
+    wipe: bool = False,
+    replace_prepared: bool = False,
+) -> GTDBatchResult:
+    """Prepare the source before connecting, then load it from Neo4j's import directory."""
+
+    prepared = prepare_gtd_csv(csv_path, import_dir, replace=replace_prepared)
     ingestor = GTDIngestor(uri, user, password)
     try:
-        ingestor.prepare_schema()
         if wipe:
             ingestor.wipe()
-        return ingestor.ingest_csv(csv_path, batch_size=batch_size)
+        ingestor.prepare_schema()
+        return ingestor.ingest_prepared(
+            prepared, import_uri=import_uri, batch_size=batch_size
+        )
     finally:
         ingestor.close()
