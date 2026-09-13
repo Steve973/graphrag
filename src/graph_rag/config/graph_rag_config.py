@@ -142,7 +142,14 @@ class GraphRagSettings(BaseSettings):
     llm_temperature: float = Field(default=0.0, ge=0.0)
     llm_max_tokens: int = Field(default=4096, ge=1)
     llm_timeout_seconds: float = Field(default=60.0, gt=0.0)
-    llm_num_retries: int = Field(default=2, ge=0)
+    llm_num_retries: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Provider-internal retry count. Keep this at zero when LangGraph node "
+            "retry policies own retry orchestration, avoiding multiplied attempts."
+        ),
+    )
 
     # LangGraph node retry configuration
     node_retry_max_attempts: int = Field(default=2, ge=1)

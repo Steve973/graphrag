@@ -2,15 +2,15 @@
 
 from pydantic import Field
 
-from graph_rag.model.action import WorkflowAction
+from graph_rag.model.action import CallToolAction
 from graph_rag.model.base import ContractModel, NonEmptyStr
 from graph_rag.model.supporting_data import EvidenceSummary
 
 
 class ActionDecision(ContractModel):
-    """Wrap the discriminated workflow-action union for structured output."""
+    """Select a graph tool after evaluation has decided to continue."""
 
-    action: WorkflowAction
+    action: CallToolAction
 
 
 class EvidenceSummaryResult(ContractModel):

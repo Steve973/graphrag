@@ -14,6 +14,7 @@ from graph_rag.model.rag_state import GraphRagState
 
 async def summarize_results(
     state: GraphRagState,
+    *,
     node_runner: GraphRagNodeRunner,
 ) -> dict[str, object]:
     """Summarize the current successful raw tool result."""

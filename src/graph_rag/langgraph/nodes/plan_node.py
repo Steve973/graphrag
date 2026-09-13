@@ -10,6 +10,7 @@ from graph_rag.model.rag_state import GraphRagState
 
 async def create_plan(
     state: GraphRagState,
+    *,
     node_runner: GraphRagNodeRunner,
 ) -> dict[str, Plan]:
     """Create the initial actionable investigation plan."""

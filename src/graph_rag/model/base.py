@@ -73,6 +73,16 @@ class Answerability(StrEnum):
     NEEDS_CLARIFICATION = "needs_clarification"
 
 
+class EvaluationOutcome(StrEnum):
+    """Choose the workflow branch after staged evaluation is complete."""
+
+    CONTINUE = "continue"
+    CLARIFY = "clarify"
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
 class ActionOutcome(StrEnum):
     """Describe the operational outcome of an executable action.
 

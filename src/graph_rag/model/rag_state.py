@@ -15,11 +15,20 @@ from graph_rag.model.iteration import IterationRecord, IterationRecordBuilder
 from graph_rag.model.plan import Plan, PlanUpdate
 from graph_rag.model.question import (
     Question,
-    FinalAnswer
+    FinalAnswer,
+    UserClarificationEvaluationResult,
+    UserClarificationRequest,
+    UserClarificationResponse,
 )
 from graph_rag.model.supporting_data import EvidenceSummary, EvidenceData
 from graph_rag.model.tool_operations import AvailableTool
-from graph_rag.model.workflow import EvaluationResult, WorkflowError, WorkflowEvaluation
+from graph_rag.model.workflow import (
+    ContradictionEvaluationResult,
+    EvaluationDecision,
+    EvidenceSelectionResult,
+    WorkflowError,
+    WorkflowEvaluation,
+)
 from graph_rag.utils import scalar_to_list
 
 
@@ -189,9 +198,17 @@ class GraphRagState(ContractModel):
             "evaluation."
         ),
     )
-    pending_evaluation: EvaluationResult | None = Field(
+    pending_evaluation: EvaluationDecision | None = Field(
         default=None,
-        description="Evaluation awaiting deterministic application.",
+        description="Final workflow decision awaiting deterministic application.",
+    )
+    pending_evidence_selection: EvidenceSelectionResult | None = Field(
+        default=None,
+        description="Evidence-selection result awaiting deterministic application.",
+    )
+    pending_contradiction_evaluation: ContradictionEvaluationResult | None = Field(
+        default=None,
+        description="Contradiction updates awaiting final evaluation application.",
     )
     pending_plan_update: PlanUpdate | None = Field(
         default=None,
@@ -223,6 +240,18 @@ class GraphRagState(ContractModel):
             "Accumulated compact evidence summaries available for future prompts "
             "and reasoning. Do not include raw tool-result data here."
         ),
+    )
+    clarification_request: UserClarificationRequest | None = Field(
+        default=None,
+        description="Most recent clarification request while user input is handled.",
+    )
+    clarification_response: UserClarificationResponse | None = Field(
+        default=None,
+        description="Most recent validated user response to a clarification request.",
+    )
+    clarification_evaluation: UserClarificationEvaluationResult | None = Field(
+        default=None,
+        description="Most recent evaluation of a user clarification response.",
     )
     status: WorkflowStatus
     final_answer: FinalAnswer | None

@@ -5,6 +5,7 @@ from typing import TypeAlias, Literal
 
 from pydantic import (
     Field,
+    model_validator,
 )
 
 from graph_rag.model.base import (
@@ -111,13 +112,23 @@ class UserClarificationEvaluationResult(ContractModel):
             "uncertainty."
         )
     )
-    remaining_information_needed: str | None = Field(
+    remaining_information_needed: NonEmptyStr | None = Field(
         default=None,
         description=(
             "Additional information needed to resolve the uncertainty. This field is "
             "required when the 'resolved' field is 'False'."
         )
     )
+
+    @model_validator(mode="after")
+    def validate_resolution(self) -> UserClarificationEvaluationResult:
+        """Require actionable follow-up guidance for unresolved responses."""
+
+        if not self.resolved and self.remaining_information_needed is None:
+            raise ValueError(
+                "unresolved clarification requires remaining_information_needed"
+            )
+        return self
 
 
 class Question(ContractModel):

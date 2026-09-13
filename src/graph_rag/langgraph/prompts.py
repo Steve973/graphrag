@@ -30,6 +30,14 @@ def state_prompt(state: GraphRagState, instruction: str) -> list[dict[str, str]]
         state,
         [section for section in sections if section is not None],
     )
+    clarification_parts = [
+        ("Clarification Request", state.clarification_request),
+        ("User Clarification Response", state.clarification_response),
+        ("Clarification Evaluation", state.clarification_evaluation),
+    ]
+    for title, value in clarification_parts:
+        if value is not None:
+            context += f"\n\n## {title}:\n{value.to_structured_text()}"
     return [
         {
             "role": "system",

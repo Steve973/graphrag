@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from typing import Any, Sequence, Mapping
 
-from litellm.types.utils import ModelResponse
 from pydantic import SecretStr, AnyHttpUrl
 
 from graph_rag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
@@ -15,12 +15,29 @@ from graph_rag.langgraph.contracts import (
     EvidenceSummaryResult,
     FinalAnswerDraft,
 )
+from graph_rag.langgraph import graph as graph_module
 from graph_rag.langgraph.graph import build_graph_rag_graph
 from graph_rag.langgraph.node_runner import GraphRagNodeRunner
-from graph_rag.model.action import CallToolAction, FinalizeAction
-from graph_rag.model.base import Answerability, PlanStepStatus, WorkflowStatus
+from graph_rag.llm.structured_output import LiteLlmStructuredOutput
+from graph_rag.model.action import (
+    CallToolAction,
+    FinalizeAction,
+    RequestClarificationAction,
+)
+from graph_rag.model.base import (
+    ErrorCategory,
+    EvaluationOutcome,
+    PlanStepStatus,
+    WorkflowStatus,
+)
 from graph_rag.model.plan import Plan, PlanStep, PlanUpdate, ReplacePlanStep
-from graph_rag.model.question import Question, WorkflowLimits
+from graph_rag.model.question import (
+    Question,
+    UserClarificationEvaluationResult,
+    UserClarificationRequest,
+    UserClarificationResponse,
+    WorkflowLimits,
+)
 from graph_rag.model.rag_state import GraphContext, GraphRagState, create_initial_state
 from graph_rag.model.supporting_data import EvidenceSummary
 from graph_rag.model.tool_operations import (
@@ -30,7 +47,12 @@ from graph_rag.model.tool_operations import (
     ToolReference,
     ToolResultStatus,
 )
-from graph_rag.model.workflow import EvaluationResult
+from graph_rag.model.workflow import (
+    ContradictionEvaluationResult,
+    EvaluationDecision,
+    EvidenceSelectionResult,
+    WorkflowError,
+)
 from graph_rag.service.graph_rag_service import GraphRagService
 from graph_rag.utils import utc_now
 
@@ -125,37 +147,41 @@ class FakeNodeRunner:
                     changes=[ReplacePlanStep(step_id=step.id, replacement=step)],
                 )
             return PlanUpdate(rationale="The plan remains appropriate.")
-        if response_model is EvaluationResult:
+        if response_model is EvidenceSelectionResult:
+            accepted = [self.summary.id] if hasattr(self, "summary") else []
+            return EvidenceSelectionResult(
+                accepted_evidence_record_ids=accepted,
+                rationale="Accept useful evidence when available.",
+            )
+        if response_model is ContradictionEvaluationResult:
+            return ContradictionEvaluationResult(
+                rationale="No contradiction changes are needed."
+            )
+        if response_model is EvaluationDecision:
             self.evaluations += 1
             if self.evaluations == 1:
-                return EvaluationResult(
-                    answerability=Answerability.NOT_READY,
+                return EvaluationDecision(
+                    outcome=EvaluationOutcome.CONTINUE,
                     iteration_purpose="Retrieve graph evidence",
                     rationale="No evidence has been retrieved yet.",
                 )
-            state_summary = self.summary
-            return EvaluationResult(
-                answerability=Answerability.COMPLETE,
+            return EvaluationDecision(
+                outcome=EvaluationOutcome.COMPLETE,
                 iteration_purpose="Produce the supported answer",
                 rationale="The required graph evidence is available.",
-                new_evidence_records=[state_summary],
             )
         if response_model is ActionDecision:
-            if self.evaluations == 1:
-                return ActionDecision(
-                    action=CallToolAction(
-                        rationale="Evidence is required.",
-                        request=ToolCallRequest(
-                            tool=ToolReference(name="read_graph"),
-                            rationale="Retrieve the needed person.",
-                        ),
-                    )
+            if self.evaluations != 1:
+                raise AssertionError(
+                    "terminal evaluations must bypass action selection"
                 )
             return ActionDecision(
-                action=FinalizeAction(
-                    rationale="The answer is fully supported.",
-                    evidence_record_ids=[self.summary.id],
-                    status=WorkflowStatus.COMPLETE,
+                action=CallToolAction(
+                    rationale="Evidence is required.",
+                    request=ToolCallRequest(
+                        tool=ToolReference(name="read_graph"),
+                        rationale="Retrieve the needed person.",
+                    ),
                 )
             )
         if response_model is EvidenceSummaryResult:
@@ -185,6 +211,64 @@ class WorkflowRunner(FakeNodeRunner):
         return await super().invoke_structured(messages, response_model)
 
 
+class ClarificationRunner(FakeNodeRunner):
+    """Pause once for clarification, then complete after accepting the response."""
+
+    async def invoke_structured(self, messages: Any, response_model: type) -> Any:
+        if response_model is UserClarificationRequest:
+            return UserClarificationRequest(
+                rationale="The name is ambiguous.",
+                user_message="Which name do you mean?",
+            )
+        if response_model is UserClarificationEvaluationResult:
+            assert "Ada" in messages[-1]["content"]
+            return UserClarificationEvaluationResult(
+                resolved=True,
+                rationale="The user supplied the intended name.",
+            )
+        if response_model is EvaluationDecision:
+            self.evaluations += 1
+            return EvaluationDecision(
+                outcome=(
+                    EvaluationOutcome.CLARIFY
+                    if self.evaluations == 1
+                    else EvaluationOutcome.COMPLETE
+                ),
+                iteration_purpose=(
+                    "Resolve the ambiguous name"
+                    if self.evaluations == 1
+                    else "Answer using the clarification"
+                ),
+                rationale=(
+                    "The intended name is ambiguous."
+                    if self.evaluations == 1
+                    else "The clarification resolved the ambiguity."
+                ),
+            )
+        if response_model is ActionDecision:
+            raise AssertionError(
+                "clarification and terminal evaluations must bypass action selection"
+            )
+        if response_model is FinalAnswerDraft:
+            return FinalAnswerDraft(answer="You meant Ada.", confidence=0.9)
+        return await super().invoke_structured(messages, response_model)
+
+
+class EvaluationFailureRunner(FakeNodeRunner):
+    """Have evaluation terminate based on an existing non-recoverable error."""
+
+    async def invoke_structured(self, messages: Any, response_model: type) -> Any:
+        if response_model is EvaluationDecision:
+            return EvaluationDecision(
+                outcome=EvaluationOutcome.FAILED,
+                iteration_purpose="Stop after a non-recoverable failure",
+                rationale="The retained failure prevents safe continuation.",
+            )
+        if response_model is ActionDecision:
+            raise AssertionError("evaluation failure must bypass action selection")
+        return await super().invoke_structured(messages, response_model)
+
+
 def test_graph_runs_two_iterations_and_finalizes() -> None:
     """Run the main retrieve, summarize, evaluate, and finalize loop."""
 
@@ -199,6 +283,89 @@ def test_graph_runs_two_iterations_and_finalizes() -> None:
     assert len(state.iterations) == 2
     assert len(state.evidence_data) == 1
     assert len(state.evidence_summaries) == 1
+
+
+def test_all_graph_nodes_use_state_first_signatures() -> None:
+    """Keep LangGraph state positional and injected dependencies keyword-only."""
+
+    node_names = (
+        "initialize_workflow",
+        "create_plan",
+        "start_iteration",
+        "evaluate_plan",
+        "modify_plan",
+        "evaluate_evidence",
+        "apply_evidence_selection",
+        "evaluate_contradictions",
+        "evaluate_outcome",
+        "apply_evaluation",
+        "determine_action",
+        "record_evaluation_outcome",
+        "execute_action",
+        "summarize_results",
+        "finalize_results",
+        "finalize_iteration",
+        "user_clarification",
+        "finalize_workflow",
+    )
+    for name in node_names:
+        parameters = list(
+            inspect.signature(getattr(graph_module, name)).parameters.values()
+        )
+        assert parameters[0].name == "state", name
+        assert all(
+            parameter.kind is inspect.Parameter.KEYWORD_ONLY
+            for parameter in parameters[1:]
+        ), name
+
+
+def test_evaluation_response_contracts_stay_narrow() -> None:
+    """Keep each staged LLM response focused on one evaluation concern."""
+
+    assert tuple(EvidenceSelectionResult.model_fields) == (
+        "accepted_evidence_record_ids",
+        "rationale",
+    )
+    assert tuple(ContradictionEvaluationResult.model_fields) == (
+        "contradictions",
+        "rationale",
+    )
+    assert tuple(EvaluationDecision.model_fields) == (
+        "outcome",
+        "iteration_purpose",
+        "rationale",
+    )
+
+
+def test_graph_uses_one_default_error_handler() -> None:
+    """Apply the shared failure handler once through graph node defaults."""
+
+    graph = build_graph_rag_graph(
+        settings(),
+        FakeProvider(),
+        node_runner=WorkflowRunner(),
+    )
+
+    assert graph.node_error_handler_map
+    assert set(graph.node_error_handler_map.values()) == {"__default_error_handler__"}
+
+
+def test_iteration_limit_preserves_latest_partial_evidence() -> None:
+    """Use evidence from the just-committed final iteration in a partial answer."""
+
+    graph = build_graph_rag_graph(
+        settings(),
+        FakeProvider(),
+        node_runner=WorkflowRunner(),
+    )
+    question = Question(text="Who is named?", limits=WorkflowLimits(max_iterations=1))
+    state = GraphRagState.model_validate(
+        asyncio.run(graph.ainvoke(create_initial_state(question)))
+    )
+
+    assert state.status == WorkflowStatus.PARTIAL
+    assert state.final_answer is not None
+    assert state.iterations[-1].evidence_records
 
 
 def test_transient_initialization_failure_is_retried() -> None:
@@ -237,10 +404,67 @@ def test_service_runs_the_checkpointed_graph() -> None:
         FakeProvider(),
         node_runner=WorkflowRunner(),
     )
-    state = asyncio.run(service.answer(Question(text="Who is named?")))
+    execution = asyncio.run(service.answer(Question(text="Who is named?")))
 
-    assert state.final_answer is not None
-    assert state.final_answer.status == WorkflowStatus.COMPLETE
+    assert not execution.interrupted
+    assert execution.state.final_answer is not None
+    assert execution.state.final_answer.status == WorkflowStatus.COMPLETE
+
+
+def test_service_interrupts_and_resumes_clarification() -> None:
+    """Expose a typed pause/resume boundary using one checkpoint thread."""
+
+    service = GraphRagService(
+        settings(),
+        FakeProvider(),
+        node_runner=ClarificationRunner(),
+    )
+    question = Question(text="Tell me about the name.")
+
+    paused = asyncio.run(service.answer(question))
+
+    assert paused.interrupted
+    assert paused.state.status == WorkflowStatus.NEEDS_CLARIFICATION
+    assert isinstance(paused.state.iterations[-1].action, RequestClarificationAction)
+    assert paused.interrupts[0].value["question"] == "Which name do you mean?"
+
+    completed = asyncio.run(
+        service.resume(
+            question.id,
+            UserClarificationResponse(response="I mean Ada."),
+        )
+    )
+
+    assert not completed.interrupted
+    assert completed.state.status == WorkflowStatus.COMPLETE
+    assert completed.state.clarification_evaluation is not None
+    assert completed.state.clarification_evaluation.resolved
+    assert completed.state.final_answer is not None
+    assert completed.state.final_answer.answer == "You meant Ada."
+
+
+def test_evaluation_failure_deterministically_stops_workflow() -> None:
+    """Let evaluation, rather than action selection, decide semantic failure."""
+
+    retained_error = WorkflowError(
+        category=ErrorCategory.TOOL_EXECUTION,
+        message="The required graph operation cannot be completed.",
+        recoverable=False,
+    )
+    graph = build_graph_rag_graph(
+        settings(),
+        FakeProvider(),
+        node_runner=EvaluationFailureRunner(),
+    )
+    initial_state = create_initial_state(Question(text="Who is named?")).model_copy(
+        update={"errors": [retained_error]}
+    )
+
+    state = GraphRagState.model_validate(asyncio.run(graph.ainvoke(initial_state)))
+
+    assert state.status == WorkflowStatus.FAILED
+    assert isinstance(state.iterations[-1].action, FinalizeAction)
+    assert state.iterations[-1].action.status == WorkflowStatus.FAILED
 
 
 def test_exhausted_retry_becomes_failed_workflow_state() -> None:
@@ -264,25 +488,48 @@ def test_exhausted_retry_becomes_failed_workflow_state() -> None:
     assert len(state.errors) == 1
 
 
-def test_node_runner_preserves_raw_agent_tool_call_api() -> None:
-    """Protect the pre-existing invoke_structured signature and forwarding behavior."""
+def test_node_runner_invokes_structured_output() -> None:
+    """Protect structured invocation and its forced output tool contract."""
 
     request: dict[str, Any] = {}
 
     class Client:
-        async def complete(self, **kwargs: Any) -> ModelResponse:
+        async def complete(self, **kwargs: Any) -> Any:
             request.update(kwargs)
-            return ModelResponse(choices=[])
+            plan = Plan(
+                objective="Answer the question",
+                steps=[PlanStep(description="Read data")],
+            )
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "tool_calls": [
+                                {
+                                    "function": {
+                                        "name": "return_structured_output",
+                                        "arguments": plan.model_dump_json(),
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
 
     runner = GraphRagNodeRunner(settings())
-    runner.client = Client()  # type: ignore[assignment]
+    runner.structured_output = LiteLlmStructuredOutput(
+        Client(),  # type: ignore[arg-type]
+    )
     messages: Sequence[Mapping[str, Any]] = [{"role": "user", "content": "hello"}]
-    asyncio.run(
+    result = asyncio.run(
         runner.invoke_structured(
             messages=messages,
             response_model=Plan,
         )
     )
 
-    assert request["messages"] is messages
-    assert request["response_model"] is Plan
+    assert isinstance(result, Plan)
+    assert request["messages"] == list(messages)
+    assert request["tool_choice"]["function"]["name"] == "return_structured_output"
+    assert request["tools"][0]["function"]["parameters"] == Plan.model_json_schema()

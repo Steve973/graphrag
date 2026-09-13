@@ -1,6 +1,7 @@
 from langgraph.types import interrupt, Command
 
 from graph_rag.langgraph.node_runner import GraphRagNodeRunner
+from graph_rag.langgraph.prompts import state_prompt
 from graph_rag.model.base import WorkflowStatus
 from graph_rag.model.question import (
     UserClarificationResponse,
@@ -11,8 +12,9 @@ from graph_rag.model.rag_state import GraphRagState
 
 
 async def user_clarification(
-        node_runner: GraphRagNodeRunner,
-        state: GraphRagState,
+    state: GraphRagState,
+    *,
+    node_runner: GraphRagNodeRunner,
 ) -> Command:
     """
     Handles the user clarification process by invoking an agent and processing
@@ -55,10 +57,10 @@ async def user_clarification(
       current iteration instance for the same reason.
 
     Args:
-        node_runner: A GraphRagNodeRunner instance responsible for managing the
-            execution of the agent node.
         state: A GraphRagState that represents the current state of the graph
             for processing.
+        node_runner: A GraphRagNodeRunner instance responsible for managing the
+            execution of the agent node.
 
     Returns:
         a Command object specifying the next node to invoke, depending on
@@ -73,17 +75,30 @@ async def user_clarification(
     # First node in the subflow would be to tell the LLM to formulate a
     # clarification request.
     clarification_request = await node_runner.invoke_structured(
-        messages=[{"role": "user", "content": "Hello!"}],
+        messages=state_prompt(
+            state,
+            "Formulate the minimum specific clarification request needed to resolve "
+            "the blocking ambiguity identified by the latest iteration. If an earlier "
+            "clarification response was insufficient, ask only for the remaining "
+            "information identified by its evaluation.",
+        ),
         response_model=UserClarificationRequest,
     )
 
     # First node also invokes the interrupt to interact with the user.
-    response = interrupt(
+    # LangGraph restarts this node when it resumes, so this model call is repeated
+    # until the TODO above is implemented as separate checkpointed subgraph nodes.
+    response_value = interrupt(
         {
             "type": "user_clarification",
             "question": clarification_request.user_message,
             "reason": clarification_request.rationale,
         }
+    )
+    response = UserClarificationResponse.model_validate(
+        {"response": response_value}
+        if isinstance(response_value, str)
+        else response_value
     )
 
     ###################################################################
@@ -92,7 +107,14 @@ async def user_clarification(
 
     # Second node conducts an evaluation of the user clarification response.
     evaluation = await node_runner.invoke_structured(
-        messages=[{"role": "user", "content": response}],
+        messages=state_prompt(
+            state,
+            "Evaluate whether the following request and user response resolve the "
+            "blocking uncertainty. If unresolved, state exactly what information is "
+            "still needed.\n\n"
+            f"Clarification request:\n{clarification_request.to_structured_text()}\n\n"
+            f"User response:\n{response.to_structured_text()}",
+        ),
         response_model=UserClarificationEvaluationResult,
     )
 
@@ -100,6 +122,9 @@ async def user_clarification(
     if not resolved:
         return Command(
             update={
+                "status": WorkflowStatus.NEEDS_CLARIFICATION,
+                "clarification_request": clarification_request,
+                "clarification_response": response,
                 "clarification_evaluation": evaluation,
             },
             # Back to first node to request further clarification
@@ -108,9 +133,11 @@ async def user_clarification(
 
     return Command(
         update={
-            "workflow_status": WorkflowStatus.RUNNING,
+            "status": WorkflowStatus.RUNNING,
+            "clarification_request": clarification_request,
+            "clarification_response": response,
             "clarification_evaluation": evaluation,
         },
         # Rejoin the main graph because the clarification was accepted
-        goto="whatever_rejoins_the_parent",
+        goto="start_iteration",
     )

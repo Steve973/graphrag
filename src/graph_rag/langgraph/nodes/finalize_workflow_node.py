@@ -16,14 +16,18 @@ from graph_rag.model.rag_state import GraphRagState
 
 async def finalize_workflow(
     state: GraphRagState,
+    *,
     node_runner: GraphRagNodeRunner,
 ) -> dict[str, object]:
     """Produce the terminal public answer from accepted workflow evidence."""
 
     last_action = state.iterations[-1].action if state.iterations else None
+    latest_iteration_evidence = (
+        state.iterations[-1].evidence_records if state.iterations else []
+    )
     if isinstance(last_action, FinalizeAction):
         status = last_action.status
-    elif state.evidence_summaries:
+    elif state.evidence_summaries or latest_iteration_evidence:
         status = WorkflowStatus.PARTIAL
     else:
         status = WorkflowStatus.FAILED

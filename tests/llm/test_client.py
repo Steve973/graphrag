@@ -44,7 +44,7 @@ def test_uses_current_async_completion_parameters() -> None:
         "temperature": 0.0,
         "max_tokens": 4096,
         "timeout": 60.0,
-        "num_retries": 2,
+        "num_retries": 0,
         "stream": False,
         "drop_params": False,
     }

@@ -21,7 +21,8 @@ from graph_rag.model.action import (
 from graph_rag.model.base import (
     ActionOutcome,
     NonEmptyStr,
-    ContractModel, Answerability
+    ContractModel,
+    EvaluationOutcome,
 )
 from graph_rag.model.plan import Plan
 from graph_rag.model.supporting_data import EvidenceSummary
@@ -29,10 +30,7 @@ from graph_rag.model.tool_operations import (
     ToolCallResult,
     ToolResultStatus
 )
-from graph_rag.model.workflow import (
-    WorkflowError,
-    EvaluationResult
-)
+from graph_rag.model.workflow import EvaluationDecision, WorkflowError
 from graph_rag.utils import scalar_to_list, utc_now
 
 
@@ -77,7 +75,7 @@ class IterationRecord(ContractModel):
             "plan-evaluation update was applied."
         ),
     )
-    evaluation_result: EvaluationResult = Field(
+    evaluation_result: EvaluationDecision = Field(
         description=(
             "Evaluation result applied to the working context before action selection. "
             "It does not evaluate the action or results produced later in the "
@@ -280,9 +278,9 @@ class IterationRecordBuilder:
     started_at: datetime = field(default_factory=utc_now)
     purpose: str = "Unspecified"
     plan: Plan = field(default_factory=Plan)
-    evaluation_result: EvaluationResult = field(
-        default_factory=lambda: EvaluationResult(
-            answerability=Answerability.NOT_READY,
+    evaluation_result: EvaluationDecision = field(
+        default_factory=lambda: EvaluationDecision(
+            outcome=EvaluationOutcome.CONTINUE,
             iteration_purpose="Unspecified",
             rationale="Unspecified",
         )
@@ -301,7 +299,7 @@ class IterationRecordBuilder:
 
     def set_evaluation_result(
         self,
-        evaluation_result: EvaluationResult,
+        evaluation_result: EvaluationDecision,
     ) -> Self:
         """Record the evaluation result applied to the working context."""
 

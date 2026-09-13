@@ -17,9 +17,14 @@ from graph_rag.model.workflow import WorkflowError
 
 async def execute_action(
     state: GraphRagState,
+    *,
     provider: GraphProvider,
 ) -> dict[str, object]:
-    """Execute a validated graph tool request and retain its raw result."""
+    """Execute a validated graph tool request and retain its raw result.
+
+    Retrying this node is safe only when providers treat the stable request ID as
+    an idempotency key or expose read-only operations.
+    """
 
     builder = state.current_iteration
     if builder is None or not isinstance(builder.action, CallToolAction):

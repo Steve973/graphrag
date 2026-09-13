@@ -30,7 +30,7 @@ from graph_rag.utils import (
 # =============================================================================
 # SELECTED ACTIONS AND EXECUTED ACTION RESULTS
 #
-# The action node selects one WorkflowAction after EvaluationResult has been
+# The action node selects one WorkflowAction after the evaluation decision has been
 # applied to the working context and current plan. Plan updates are part of
 # evaluation application and are not workflow actions.
 #

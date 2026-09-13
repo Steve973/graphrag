@@ -8,6 +8,7 @@ from graph_rag.model.rag_state import GraphRagState
 
 async def evaluate_plan(
     state: GraphRagState,
+    *,
     node_runner: GraphRagNodeRunner,
 ) -> dict[str, PlanUpdate]:
     """Ask the model for an ordered, contract-valid plan change set."""

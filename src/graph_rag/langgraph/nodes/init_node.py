@@ -10,6 +10,7 @@ from graph_rag.model.rag_state import GraphRagState
 
 async def initialize_workflow(
     state: GraphRagState,
+    *,
     provider: GraphProvider,
     settings: GraphRagSettings,
 ) -> dict[str, object]:

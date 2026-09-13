@@ -13,6 +13,7 @@ from pydantic import (
 from graph_rag.model.base import (
     ContractModel,
     Answerability,
+    EvaluationOutcome,
     ErrorCategory,
     ReasoningImpact,
     NonEmptyStr
@@ -125,11 +126,11 @@ class BaseEvaluationContent(ContractModel):
 
     @model_validator(mode="after")
     def validate_failure_answerability(self) -> BaseEvaluationContent:
-        """Keep failure disposition distinct from complete answerability."""
+        """Keep failure disposition distinct from answerable outcomes."""
 
-        if self.failure is not None and self.answerability == Answerability.COMPLETE:
+        if self.failure is not None and self.answerability != Answerability.NOT_READY:
             raise ValueError(
-                "evaluation failure cannot be combined with complete answerability"
+                "evaluation failure requires NOT_READY answerability"
             )
         return self
 
@@ -145,7 +146,7 @@ class WorkflowEvaluation(BaseEvaluationContent):
 
     This model records the evaluator's conclusions. It does not describe the
     updates that must be applied to the working context or plan. Those
-    instructions are carried separately by EvaluationResult.
+    instructions are carried separately by the staged evaluation results.
 
     The evaluation retained in an IterationRecord is the evaluation used to
     prepare the context and choose that iteration's action. It does not assess
@@ -287,56 +288,29 @@ class ContradictionsUpdate(ContractModel):
     )
 
 
-class EvaluationResult(BaseEvaluationContent):
-    """Describe the updates to apply before action selection. The LLM returns instances of
-    this class for subsequent application.
+class EvidenceSelectionResult(ContractModel):
+    """Select evidence from the immediately preceding iteration by ID."""
 
-    Attributes:
-        id: Stable identifier for this evaluation result, normally generated automatically.
-            Omit it when producing a new evaluation result.
-        assumptions_updates: Updates to assumptions discovered or still relevant while evaluating this plan.
-            Include only assumptions that affect reasoning or completion, with explicit
-            impact and evidence links where applicable.
-        contradictions_updates: Updates to contradictions discovered or still relevant while evaluating this plan.
-            Each must explain the conflict, impact, affected steps, and supporting
-            evidence.
-        new_evidence_records: Evidence from the preceding iteration to
-            incorporate into the cumulative working context.
-        answerability: Current ability to answer based on the evaluated plan and evidence: COMPLETE
-            only when all required steps are complete and no blocking issue remains;
-            PARTIAL when useful supported content exists but material gaps remain;
-            NEEDS_CLARIFICATION when user input is required; otherwise NOT_READY.
-        iteration_purpose: Immediate goal for the current iteration, derived from what is now
-            known, what remains unresolved, and what progress would most directly
-            advance the investigation.
-        rationale: Integrated explanation for the evaluation’s answerability, plan disposition,
-            assumptions, contradictions, and recommended focus. Ground all factual
-            claims in the evidence IDs listed by this evaluation.
-    """
+    accepted_evidence_record_ids: list[NonEmptyStr] = Field(default_factory=list)
+    rationale: NonEmptyStr
 
-    id: str = Field(
-        default_factory=lambda: new_id("evaluation_result"),
-        description=(
-            "Stable identifier for this evaluation result, normally generated automatically. "
-            "Omit it when producing a new evaluation result."
-        ),
-    )
-    contradictions_updates: Annotated[
-        list[ContradictionsUpdate],
+
+class ContradictionEvaluationResult(ContractModel):
+    """Return the complete current contradiction set."""
+
+    contradictions: Annotated[
+        list[Contradiction],
         BeforeValidator(scalar_to_list),
-    ] = Field(
-        default_factory=list,
-        description=(
-            "Contradictions updates to be applied, in order, to the list of contradictions."
-        ),
-    )
-    new_evidence_records: list[EvidenceSummary] = Field(
-        default_factory=list,
-        description=(
-            "Evidence from the preceding iteration to incorporate into the "
-            "cumulative working context."
-        ),
-    )
+    ] = Field(default_factory=list)
+    rationale: NonEmptyStr
+
+
+class EvaluationDecision(ContractModel):
+    """Choose one workflow outcome after evidence and contradictions are updated."""
+
+    outcome: EvaluationOutcome
+    iteration_purpose: NonEmptyStr
+    rationale: NonEmptyStr
 
 
 class WorkflowError(ContractModel):
