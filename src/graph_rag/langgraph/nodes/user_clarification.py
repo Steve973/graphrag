@@ -38,6 +38,16 @@ async def user_clarification(
       Then, when clarification is complete, that clarification state instance
       can be cleared to 'None'.
 
+    TODO: There should probably be a 'GraphRagSubgraphState' base class that
+      exists as a property on the main GraphRagState instance instead of having
+      multiple subgraph state instances. Only one subgraph is executing at a time,
+      even if any are executed via 'Send' and fan out. Each subgraph's state
+      implementations would be derived from this base class, and the main state
+      instance can just use this instance when the subgraph is running, and then
+      after its results are used in the node that applies the results (in the
+      main graph), the subgraph state can be cleared to 'None'. These state
+      implementations might work well as TypedDicts.
+
     TODO: The current iteration instance captures all activities in the
       iteration so that the whole workflow is traceable and can be evaluated.
       Clarification requests and responses also need to be recorded on the
