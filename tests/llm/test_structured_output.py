@@ -7,13 +7,13 @@ import pytest
 from litellm.types.utils import ModelResponse
 from pydantic import Field, SecretStr
 
-from graph_rag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
-from graph_rag.llm.client import LiteLlmClient
-from graph_rag.llm.structured_output import (
+from graphrag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
+from graphrag.llm.client import LiteLlmClient
+from graphrag.llm.structured_output import (
     LiteLlmStructuredOutput,
     StructuredOutputError,
 )
-from graph_rag.model.base import ContractModel
+from graphrag.model.base import ContractModel
 
 
 class ExampleResponse(ContractModel):

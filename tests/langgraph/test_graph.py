@@ -8,53 +8,53 @@ from typing import Any, Sequence, Mapping
 
 from pydantic import SecretStr, AnyHttpUrl
 
-from graph_rag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
-from graph_rag.graph_store.provider import GraphProvider
-from graph_rag.langgraph.contracts import (
+from graphrag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
+from graphrag.graph_store.provider import GraphProvider
+from graphrag.langgraph.contracts import (
     ActionDecision,
     EvidenceSummaryResult,
     FinalAnswerDraft,
 )
-from graph_rag.langgraph import graph as graph_module
-from graph_rag.langgraph.graph import build_graph_rag_graph
-from graph_rag.langgraph.node_runner import GraphRagNodeRunner
-from graph_rag.llm.structured_output import LiteLlmStructuredOutput
-from graph_rag.model.action import (
+from graphrag.langgraph import graph as graph_module
+from graphrag.langgraph.graph import build_graph_rag_graph
+from graphrag.langgraph.node_runner import GraphRagNodeRunner
+from graphrag.llm.structured_output import LiteLlmStructuredOutput
+from graphrag.model.action import (
     CallToolAction,
     FinalizeAction,
     RequestClarificationAction,
 )
-from graph_rag.model.base import (
+from graphrag.model.base import (
     ErrorCategory,
     EvaluationOutcome,
     PlanStepStatus,
     WorkflowStatus,
 )
-from graph_rag.model.plan import Plan, PlanStep, PlanUpdate, ReplacePlanStep
-from graph_rag.model.question import (
+from graphrag.model.plan import Plan, PlanStep, PlanUpdate, ReplacePlanStep
+from graphrag.model.question import (
     Question,
     UserClarificationEvaluationResult,
     UserClarificationRequest,
     UserClarificationResponse,
     WorkflowLimits,
 )
-from graph_rag.model.rag_state import GraphContext, GraphRagState, create_initial_state
-from graph_rag.model.supporting_data import EvidenceSummary
-from graph_rag.model.tool_operations import (
+from graphrag.model.rag_state import GraphContext, GraphRagState, create_initial_state
+from graphrag.model.supporting_data import EvidenceSummary
+from graphrag.model.tool_operations import (
     AvailableTool,
     ToolCallRequest,
     ToolCallResult,
     ToolReference,
     ToolResultStatus,
 )
-from graph_rag.model.workflow import (
+from graphrag.model.workflow import (
     ContradictionEvaluationResult,
     EvaluationDecision,
     EvidenceSelectionResult,
     WorkflowError,
 )
-from graph_rag.service.graph_rag_service import GraphRagService
-from graph_rag.utils import utc_now
+from graphrag.service.graph_rag_service import GraphRagService
+from graphrag.utils import utc_now
 
 
 def settings() -> GraphRagSettings:

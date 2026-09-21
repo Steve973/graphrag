@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 from litellm.types.utils import ModelResponse
 
-from graph_rag.llm.client import LiteLlmClient
+from graphrag.llm.client import LiteLlmClient
 from tests.llm.test_structured_output import settings
 
 

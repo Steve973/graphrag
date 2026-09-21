@@ -1,4 +1,4 @@
-from graph_rag.graph_store.neo4j.neo4j_gds import (
+from graphrag.graph_store.neo4j.neo4j_gds import (
     GdsProcedureToolDescriptor,
     gds_signature_to_input_schema,
 )

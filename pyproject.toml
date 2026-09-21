@@ -1,12 +1,16 @@
 [project]
-name = "graph_rag"
+name = "graphrag"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+  "boto3==1.43.98",
   "cymple==0.12.0",
   "fastapi==0.139.2",
+  "langchain-aws==1.4.7",
   "httpx==0.28.1",
   "langchain-core==1.4.9",
+  # Ragas 0.4.3 still imports the VertexAI compatibility module removed in 0.4.2.
+  "langchain-community==0.4.1",
   "langgraph==1.2.9",
   "langgraph-checkpoint-mongodb==0.5.0",
   "litellm==1.93.0",
@@ -15,6 +19,7 @@ dependencies = [
   "pydantic==2.13.4",
   "pydantic-settings==2.14.2",
   "pymongo==4.17.0",
+  "ragas==0.4.3",
   "uvicorn[standard]==0.51.0",
 ]
 
@@ -28,5 +33,14 @@ requires = ["uv_build>=0.11.29,<0.12.0"]
 build-backend = "uv_build"
 
 [project.scripts]
-graphrag = "graph_rag.main:run"
+graphrag = "graphrag.main:run"
 graphrag-seed-gtd = "gtd.seed_gtd:main"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.pyright]
+pythonVersion = "3.12"
+
+[tool.mypy]
+python_version = "3.12"

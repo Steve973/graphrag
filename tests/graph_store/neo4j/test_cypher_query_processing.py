@@ -1,6 +1,6 @@
 """Tests for clause-level Cypher query splitting."""
 
-from graph_rag.graph_store.neo4j.cypher_query_processing import (
+from graphrag.graph_store.neo4j.cypher_query_processing import (
     CypherClauseKeyword,
     find_last_clause_index,
     split_cypher_clauses,
