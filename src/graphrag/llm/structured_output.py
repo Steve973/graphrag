@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from graphrag.llm.client import LiteLlmClient
+from litellm.types.utils import ModelResponse
 
 
 StructuredModel = TypeVar("StructuredModel", bound=BaseModel)
@@ -17,6 +17,19 @@ _OUTPUT_TOOL_NAME = "return_structured_output"
 
 class StructuredOutputError(ValueError):
     """Raised when an LLM does not return one valid forced output tool call."""
+
+
+class ChatCompletionClient(Protocol):
+    """Transport contract used by the structured-output adapter."""
+
+    async def complete(
+        self,
+        *,
+        messages: Sequence[Mapping[str, Any]],
+        tools: Sequence[Mapping[str, Any]] | None = None,
+        tool_choice: str | Mapping[str, Any] | None = None,
+        parallel_tool_calls: bool | None = None,
+    ) -> ModelResponse: ...
 
 
 class LiteLlmStructuredOutput:
@@ -30,7 +43,7 @@ class LiteLlmStructuredOutput:
 
     def __init__(
         self,
-        client: LiteLlmClient,
+        client: ChatCompletionClient,
     ) -> None:
         self._client = client
 

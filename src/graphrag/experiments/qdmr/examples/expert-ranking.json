@@ -1,0 +1,373 @@
+{
+  "schema_version": "question-semantics/1",
+  "method": "llm_semantic_analysis",
+  "backend": "codex/cli-default",
+  "question": "Show me the top five experts in feline cardiomyopathy. An expert would have authored or co-authored at least 4 publications on this subject. Top experts would have more authored or co-authored publications, bub. If an exerts are tied, you can list all of the tied experts at that ranking instead of limiting it to exactly five experts. your last attempt was dumb; this is not the people who are tied at fifth place, dumbass. it is the top five rankings in terms of authoriship.",
+  "decomposition": {
+    "concepts": [
+      {
+        "id": "c1",
+        "expression": "five",
+        "kind": "quantity",
+        "component_ids": []
+      },
+      {
+        "id": "c2",
+        "expression": "experts",
+        "kind": "entity",
+        "component_ids": []
+      },
+      {
+        "id": "c3",
+        "expression": "feline",
+        "kind": "qualifier",
+        "component_ids": []
+      },
+      {
+        "id": "c4",
+        "expression": "cardiomyopathy",
+        "kind": "domain",
+        "component_ids": []
+      },
+      {
+        "id": "c5",
+        "expression": "feline cardiomyopathy",
+        "kind": "compound",
+        "component_ids": [
+          "c3",
+          "c4"
+        ]
+      },
+      {
+        "id": "c6",
+        "expression": "top five experts in feline cardiomyopathy",
+        "kind": "compound",
+        "component_ids": [
+          "c1",
+          "c2",
+          "c5"
+        ]
+      },
+      {
+        "id": "c7",
+        "expression": "authored",
+        "kind": "relation",
+        "component_ids": []
+      },
+      {
+        "id": "c8",
+        "expression": "co-authored",
+        "kind": "relation",
+        "component_ids": []
+      },
+      {
+        "id": "c9",
+        "expression": "at least 4",
+        "kind": "quantity",
+        "component_ids": []
+      },
+      {
+        "id": "c10",
+        "expression": "publications",
+        "kind": "entity",
+        "component_ids": []
+      },
+      {
+        "id": "c11",
+        "expression": "this subject",
+        "kind": "reference",
+        "component_ids": []
+      },
+      {
+        "id": "c12",
+        "expression": "authored or co-authored at least 4 publications on this subject",
+        "kind": "compound",
+        "component_ids": [
+          "c7",
+          "c8",
+          "c9",
+          "c10",
+          "c11"
+        ]
+      },
+      {
+        "id": "c13",
+        "expression": "more authored or co-authored publications",
+        "kind": "compound",
+        "component_ids": [
+          "c7",
+          "c8",
+          "c10"
+        ]
+      },
+      {
+        "id": "c14",
+        "expression": "all of the tied experts at that ranking",
+        "kind": "compound",
+        "component_ids": [
+          "c2"
+        ]
+      },
+      {
+        "id": "c15",
+        "expression": "exactly five experts",
+        "kind": "compound",
+        "component_ids": [
+          "c1",
+          "c2"
+        ]
+      },
+      {
+        "id": "c16",
+        "expression": "the people who are tied at fifth place",
+        "kind": "other",
+        "component_ids": []
+      },
+      {
+        "id": "c17",
+        "expression": "top five rankings",
+        "kind": "compound",
+        "component_ids": [
+          "c1"
+        ]
+      },
+      {
+        "id": "c18",
+        "expression": "authoriship",
+        "kind": "relation",
+        "component_ids": []
+      }
+    ],
+    "meanings": [
+      {
+        "id": "m1",
+        "kind": "requested_result",
+        "statement": "The requested result is experts in feline cardiomyopathy occupying the top five ranking groups.",
+        "concept_ids": [
+          "c2",
+          "c5",
+          "c6",
+          "c17"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "Show me the top five experts in feline cardiomyopathy.",
+          "it is the top five rankings in terms of authoriship."
+        ]
+      },
+      {
+        "id": "m2",
+        "kind": "definition",
+        "statement": "An expert is a person who has authored or co-authored at least four publications on the specified subject.",
+        "concept_ids": [
+          "c2",
+          "c12"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "An expert would have authored or co-authored at least 4 publications on this subject."
+        ]
+      },
+      {
+        "id": "m3",
+        "kind": "relationship",
+        "statement": "Qualifying publications are attributed to a candidate through authorship or co-authorship; either relation qualifies.",
+        "concept_ids": [
+          "c2",
+          "c7",
+          "c8",
+          "c10"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "authored or co-authored at least 4 publications"
+        ]
+      },
+      {
+        "id": "m4",
+        "kind": "relationship",
+        "statement": "The publications relevant to qualification are on feline cardiomyopathy, the referent of 'this subject'.",
+        "concept_ids": [
+          "c5",
+          "c10",
+          "c11"
+        ],
+        "basis": "interpretation",
+        "source_quotes": [
+          "feline cardiomyopathy",
+          "publications on this subject"
+        ]
+      },
+      {
+        "id": "m5",
+        "kind": "qualification",
+        "statement": "The relevant publication count for a candidate must be at least four for that candidate to qualify as an expert.",
+        "concept_ids": [
+          "c2",
+          "c9",
+          "c10",
+          "c12"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "An expert would have authored or co-authored at least 4 publications on this subject."
+        ]
+      },
+      {
+        "id": "m6",
+        "kind": "ranking",
+        "statement": "Experts rank higher when they have more authored or co-authored publications.",
+        "concept_ids": [
+          "c2",
+          "c13"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "Top experts would have more authored or co-authored publications"
+        ]
+      },
+      {
+        "id": "m7",
+        "kind": "scope",
+        "statement": "The ranking count concerns publications on feline cardiomyopathy, continuing the subject restriction in the expert definition; 'authoriship' refers to the previously stated authorship or co-authorship measure.",
+        "concept_ids": [
+          "c5",
+          "c12",
+          "c13",
+          "c18"
+        ],
+        "basis": "interpretation",
+        "source_quotes": [
+          "publications on this subject",
+          "Top experts would have more authored or co-authored publications",
+          "in terms of authoriship"
+        ]
+      },
+      {
+        "id": "m8",
+        "kind": "selection",
+        "statement": "The requested selection comprises the five highest ranking groups.",
+        "concept_ids": [
+          "c1",
+          "c17"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "it is the top five rankings in terms of authoriship."
+        ]
+      },
+      {
+        "id": "m9",
+        "kind": "selection",
+        "statement": "The unit counted for the five-group selection is rankings, rather than individual experts.",
+        "concept_ids": [
+          "c15",
+          "c17"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "instead of limiting it to exactly five experts",
+          "it is the top five rankings"
+        ]
+      },
+      {
+        "id": "m10",
+        "kind": "selection",
+        "statement": "All experts tied within each selected ranking group are included. The correction rejects interpreting the request as five people expanded only for ties at fifth place.",
+        "concept_ids": [
+          "c14",
+          "c15",
+          "c16",
+          "c17"
+        ],
+        "basis": "explicit",
+        "source_quotes": [
+          "you can list all of the tied experts at that ranking instead of limiting it to exactly five experts",
+          "this is not the people who are tied at fifth place",
+          "it is the top five rankings in terms of authoriship."
+        ]
+      }
+    ],
+    "requirements": [
+      {
+        "id": "r1",
+        "statement": "The meaning of the domain feline cardiomyopathy must be established.",
+        "meaning_ids": [
+          "m1",
+          "m4"
+        ],
+        "depends_on": []
+      },
+      {
+        "id": "r2",
+        "statement": "Publication relevance to feline cardiomyopathy must be established.",
+        "meaning_ids": [
+          "m4",
+          "m7"
+        ],
+        "depends_on": [
+          "r1"
+        ]
+      },
+      {
+        "id": "r3",
+        "statement": "Authorship or co-authorship attribution of relevant publications to candidates must be established.",
+        "meaning_ids": [
+          "m3"
+        ],
+        "depends_on": []
+      },
+      {
+        "id": "r4",
+        "statement": "The relevant publication count per candidate must be established.",
+        "meaning_ids": [
+          "m2",
+          "m5",
+          "m7"
+        ],
+        "depends_on": [
+          "r2",
+          "r3"
+        ]
+      },
+      {
+        "id": "r5",
+        "statement": "Which candidates satisfy the supplied threshold of at least four relevant publications must be established.",
+        "meaning_ids": [
+          "m2",
+          "m5"
+        ],
+        "depends_on": [
+          "r4"
+        ]
+      },
+      {
+        "id": "r6",
+        "statement": "The ranking of qualifying experts by descending relevant publication count, including groups with equal counts, must be established.",
+        "meaning_ids": [
+          "m6",
+          "m7",
+          "m10"
+        ],
+        "depends_on": [
+          "r4",
+          "r5"
+        ]
+      },
+      {
+        "id": "r7",
+        "statement": "The qualifying experts belonging to the five highest ranking groups, including every expert tied within each selected group, must be established.",
+        "meaning_ids": [
+          "m1",
+          "m8",
+          "m9",
+          "m10"
+        ],
+        "depends_on": [
+          "r6"
+        ]
+      }
+    ],
+    "unresolved": []
+  }
+}
