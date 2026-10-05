@@ -13,7 +13,6 @@ dependencies = [
   "langchain-community==0.4.1",
   "langgraph==1.2.9",
   "langgraph-checkpoint-mongodb==0.5.0",
-  "litellm==1.93.0",
   "mcp==1.28.1",
   "neo4j==6.2.0",
   "pydantic==2.13.4",

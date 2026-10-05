@@ -87,12 +87,12 @@ understanding = result.model_dump(mode="json")
 For the app's existing LLM connection:
 
 ```python
-from graphrag.llm.client import LiteLlmClient
-from graphrag.llm.structured_output import LiteLlmStructuredOutput
+from graphrag.llm.client import LangChainClient
+from graphrag.llm.structured_output import LangChainStructuredOutput
 
 result = await decompose(
     question,
-    backend=LiteLlmStructuredOutput(LiteLlmClient(settings)),
+    backend=LangChainStructuredOutput(LangChainClient(settings)),
     backend_name=settings.llm_model,
 )
 ```
@@ -115,14 +115,19 @@ process. The prompt requests text transformation without tool use.
 increases the per-question timeout from 180 seconds.
 [Official Codex scripting documentation](https://learn.chatgpt.com/docs/non-interactive-mode).
 
-`--backend llm` selects the existing LiteLLM transport and forced output tool.
-It requires `GRAPH_RAG_LLM_URL`, `GRAPH_RAG_LLM_API_KEY`, `GRAPH_RAG_LLM_MODEL`, and
-`GRAPH_RAG_LLM_PROVIDER`, supplied by environment or `.env`. Run from the repository
-root to load `.env`. It also accepts the app's LLM temperature, timeout, retry,
-and maximum-token settings. Detailed semantic output may need a larger
-`GRAPH_RAG_LLM_MAX_TOKENS` than short questions. The model must support forced tool
-calls. This transport has not been live-verified against Bedrock; use your work
-project's authenticated backend through the callable seam where appropriate.
+`--backend llm` selects LangChain's AWS Bedrock Converse transport and the forced
+output tool. Set `GRAPH_RAG_LLM_MODEL` to a Bedrock model or inference-profile ID.
+The provider defaults to `bedrock_converse`. Authentication uses standard AWS
+credential discovery; optionally select `GRAPH_RAG_LLM_AWS_PROFILE` and
+`GRAPH_RAG_LLM_REGION`. `GRAPH_RAG_LLM_URL` and `GRAPH_RAG_LLM_API_KEY` are optional
+Bedrock endpoint and API-key overrides. Run from the repository root to load
+`.env`. The app's temperature, timeout, retry and maximum-token settings also
+apply. Detailed semantic output may need a larger `GRAPH_RAG_LLM_MAX_TOKENS`.
+The model must support named forced tool choice; configurations that would
+silently downgrade this to automatic choice are rejected. Bedrock does not offer
+a generic parallel-call switch, so multiple returned calls are rejected during
+validation. This transport has not been live-verified against an AWS account.
+See [LLM client configuration](../../../../docs/llm_client.md).
 
 ## Validation
 
@@ -130,7 +135,7 @@ project's authenticated backend through the callable seam where appropriate.
 .venv/bin/python -m pytest tests/experiments tests/llm -q
 ```
 
-Tests exercise the actual LiteLLM adapter with only its remote call mocked, the
+Tests exercise the native LangChain/Bedrock adapter with only AWS calls stubbed, the
 Codex subprocess boundary, exact-source validation, compound/reference integrity,
 requirement dependencies, explicit/interpretation labeling and CLI batch failure
 handling. These tests establish mechanical correctness, not semantic quality.

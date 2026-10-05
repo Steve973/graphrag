@@ -1,13 +1,13 @@
 """LLM provider adapters."""
 
-from graphrag.llm.client import LiteLlmClient
+from graphrag.llm.client import LangChainClient
 from graphrag.llm.structured_output import (
-    LiteLlmStructuredOutput,
+    LangChainStructuredOutput,
     StructuredOutputError,
 )
 
 __all__ = [
-    "LiteLlmClient",
-    "LiteLlmStructuredOutput",
+    "LangChainClient",
+    "LangChainStructuredOutput",
     "StructuredOutputError",
 ]

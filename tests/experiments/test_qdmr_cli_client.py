@@ -1,57 +1,48 @@
-"""Exercise the production experiment client, mocking only the remote call."""
-import asyncio
-import json
+"""Exercise the production question-semantics client through native Bedrock calls."""
 
-import litellm
-import pytest
-from litellm.types.utils import ModelResponse
+import asyncio
+from unittest.mock import Mock
 
 from graphrag.experiments.qdmr import decompose
 from graphrag.experiments.qdmr.cli_backend import CliClient, LlmSettings
-from graphrag.llm.structured_output import ChatCompletionClient, LiteLlmStructuredOutput
+from graphrag.llm.structured_output import LangChainStructuredOutput
+from tests.llm.test_client import MODEL, RuntimeStub
+from tests.llm.test_structured_output import tool_response
 
 
-def settings():
-    return LlmSettings(
-        _env_file=None, _secrets_dir=(),
-        llm_url="https://example.test/v1", llm_api_key="test-key",
-        llm_model="test-model", llm_provider="test-provider",
+def test_real_cli_client_through_structured_output(
+    monkeypatch, semantic_payload, semantic_question
+):
+    runtime = RuntimeStub(tool_response(semantic_payload))
+    monkeypatch.setattr(
+        "langchain_aws.chat_models.bedrock_converse.create_aws_client",
+        lambda **kwargs: (
+            runtime if kwargs["service_name"] == "bedrock-runtime" else Mock()
+        ),
     )
-
-
-def test_real_cli_client_through_structured_output(monkeypatch, semantic_payload, semantic_question):
-    requests = []
-
-    async def completion(**kwargs):
-        requests.append(kwargs)
-        return ModelResponse(choices=[{"message": {"role": "assistant", "tool_calls": [{
-            "id": "call_1", "type": "function", "function": {
-                "name": "return_structured_output",
-                "arguments": json.dumps(semantic_payload),
-            },
-        }]}}])
-
-    monkeypatch.setattr(litellm, "acompletion", completion)
-    client: ChatCompletionClient = CliClient(settings())
-    result = asyncio.run(decompose(
-        semantic_question, backend=LiteLlmStructuredOutput(client),
-        backend_name="test-provider/test-model",
-    ))
+    configuration = LlmSettings(
+        _env_file=None, _secrets_dir=(), llm_model=MODEL, llm_region="us-east-1"
+    )
+    result = asyncio.run(
+        decompose(
+            semantic_question,
+            backend=LangChainStructuredOutput(CliClient(configuration)),
+            backend_name=configuration.model_name,
+        )
+    )
     assert result.decomposition.concepts[0].expression == "experts"
-    request, = requests
-    assert request["model"] == "test-provider/test-model"
-    assert request["base_url"] == "https://example.test/v1"
-    assert request["messages"][1]["content"] == semantic_question
-    assert request["tool_choice"]["function"]["name"] == "return_structured_output"
-    assert request["tools"][0]["function"]["parameters"]["additionalProperties"] is False
-    assert request["parallel_tool_calls"] is False
-    assert request["stream"] is False
-
-
-def test_real_cli_client_rejects_wrong_response_type(monkeypatch):
-    async def completion(**kwargs):
-        return {"choices": []}
-
-    monkeypatch.setattr(litellm, "acompletion", completion)
-    with pytest.raises(TypeError, match="expected ModelResponse"):
-        asyncio.run(CliClient(settings()).complete(messages=[]))
+    (request,) = runtime.requests
+    assert request["modelId"] == MODEL
+    assert request["messages"][0]["content"][0]["text"] == semantic_question
+    assert request[
+        "system"
+    ]  # The prompt's system message is native Bedrock system content.
+    assert request["toolConfig"]["toolChoice"] == {
+        "tool": {"name": "return_structured_output"}
+    }
+    assert (
+        request["toolConfig"]["tools"][0]["toolSpec"]["inputSchema"]["json"][
+            "additionalProperties"
+        ]
+        is False
+    )

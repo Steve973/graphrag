@@ -3,11 +3,12 @@ import copy
 import json
 
 import pytest
-from litellm.types.utils import ModelResponse
+from langchain_core.messages import AIMessage
+from langchain_core.tools import StructuredTool
 from pydantic import ValidationError
 
 from graphrag.experiments.qdmr import Decomposition, DecompositionDraft, decompose
-from graphrag.llm.structured_output import LiteLlmStructuredOutput, StructuredOutputError
+from graphrag.llm.structured_output import LangChainStructuredOutput, StructuredOutputError
 
 
 class Client:
@@ -15,17 +16,20 @@ class Client:
         self.data = data
         self.requests = []
 
-    async def complete(self, **kwargs) -> ModelResponse:
+    async def complete(self, **kwargs) -> AIMessage:
         self.requests.append(kwargs)
-        return ModelResponse(**{"choices": [{"message": {"tool_calls": [{"function": {
-            "name": "return_structured_output", "arguments": json.dumps(self.data)
-        }}]}}]})
+        return AIMessage(
+            content="",
+            tool_calls=[
+                {"name": "return_structured_output", "args": self.data, "id": "call_1"},
+            ],
+        )
 
 
 def test_source_grounded_semantics_through_structured_adapter(semantic_payload, semantic_question):
     client = Client(semantic_payload)
     result = asyncio.run(decompose(semantic_question,
-        backend=LiteLlmStructuredOutput(client), backend_name="test/model"))
+        backend=LangChainStructuredOutput(client), backend_name="test/model"))
     assert result.schema_version == "question-semantics/1"
     assert result.method == "llm_semantic_analysis"
     assert result.question == semantic_question
@@ -35,8 +39,11 @@ def test_source_grounded_semantics_through_structured_adapter(semantic_payload, 
     assert "final_step_id" not in result.model_dump()
     request = client.requests[0]
     assert request["messages"][1]["content"] == semantic_question
-    assert request["tool_choice"]["function"]["name"] == "return_structured_output"
-    assert request["tools"][0]["function"]["parameters"]["additionalProperties"] is False
+    assert request["tool_choice"] == "return_structured_output"
+    tool = request["tools"][0]
+    assert isinstance(tool, StructuredTool)
+    assert isinstance(tool.args_schema, dict)
+    assert tool.args_schema["additionalProperties"] is False
 
 
 @pytest.mark.parametrize("change", [
@@ -76,7 +83,7 @@ def test_invented_source_text_rejected(semantic_payload, semantic_question, chan
 def test_bad_backend_shape_fails_without_fabricated_output(semantic_payload, semantic_question):
     client = Client({**semantic_payload, "requirements": []})
     with pytest.raises(StructuredOutputError):
-        asyncio.run(decompose(semantic_question, backend=LiteLlmStructuredOutput(client), backend_name="fake"))
+        asyncio.run(decompose(semantic_question, backend=LangChainStructuredOutput(client), backend_name="fake"))
 
 
 def test_explicit_definition_remains_distinct_from_interpretation(semantic_payload, semantic_question):
@@ -100,7 +107,7 @@ def test_unresolved_is_optional_without_a_routing_status(semantic_payload):
 def test_empty_input_does_not_call_model(semantic_payload):
     client = Client(semantic_payload)
     with pytest.raises(ValueError):
-        asyncio.run(decompose("  ", backend=LiteLlmStructuredOutput(client), backend_name="fake"))
+        asyncio.run(decompose("  ", backend=LangChainStructuredOutput(client), backend_name="fake"))
     assert client.requests == []
 
 
@@ -108,8 +115,8 @@ def test_cli_needs_only_llm_configuration():
     from graphrag.experiments.qdmr.cli_backend import LlmSettings
     config = LlmSettings(_env_file=None, _secrets_dir=(),
         llm_url="http://localhost:8000/v1", llm_api_key="local",
-        llm_model="provider/model", llm_provider="provider")
-    assert config.model_name == "provider/model"
+        llm_model="bedrock_converse/model", llm_provider="bedrock_converse")
+    assert config.model_name == "model"
 
 
 def test_cli_continues_after_failure(monkeypatch, capsys, tmp_path, semantic_payload, semantic_question):
@@ -120,10 +127,11 @@ def test_cli_continues_after_failure(monkeypatch, capsys, tmp_path, semantic_pay
         llm_url="http://localhost:8000/v1", llm_api_key="local",
         llm_model="model", llm_provider="provider")
     monkeypatch.setattr(cli_backend, "LlmSettings", lambda: config)
+    monkeypatch.setattr(cli_backend, "CliClient", lambda configuration: Client(semantic_payload))
     async def fake_decompose(question, **kwargs):
         if question == "bad":
             raise RuntimeError("secret must not be printed")
-        return await decompose(question, backend=LiteLlmStructuredOutput(Client(semantic_payload)), backend_name="fake")
+        return await decompose(question, backend=LangChainStructuredOutput(Client(semantic_payload)), backend_name="fake")
     monkeypatch.setattr(cli, "decompose", fake_decompose)
     path = tmp_path / "questions.txt"
     path.write_text("bad\n\n" + semantic_question + "\n", encoding="utf-8")

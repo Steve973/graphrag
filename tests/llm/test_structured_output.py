@@ -1,19 +1,17 @@
-from __future__ import annotations
+"""Protect the existing forced-output contract with native LangChain responses."""
 
 import asyncio
-from typing import Any
 
 import pytest
-from litellm.types.utils import ModelResponse
-from pydantic import Field, SecretStr
+from langchain_core.messages import AIMessage
+from pydantic import Field
 
-from graphrag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
-from graphrag.llm.client import LiteLlmClient
 from graphrag.llm.structured_output import (
-    LiteLlmStructuredOutput,
+    LangChainStructuredOutput,
     StructuredOutputError,
 )
 from graphrag.model.base import ContractModel
+from tests.llm.test_client import bedrock_response, make_client
 
 
 class ExampleResponse(ContractModel):
@@ -21,112 +19,116 @@ class ExampleResponse(ContractModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
-def settings() -> GraphRagSettings:
-    return GraphRagSettings(
-        data_profile=GraphDataProfile(version="1"),
-        llm_url="https://llm.example.test/v1",
-        llm_api_key=SecretStr("secret"),
-        llm_model="test-model",
-        llm_provider="test-provider",
-        graph_db_mcp_url="https://graph.example.test/mcp",
-        graph_db_username="neo4j",
-        graph_db_password=SecretStr("secret"),
-        graph_db_database="neo4j",
-    )
-
-
-def tool_response(
-    arguments: str | dict[str, Any],
-    *,
-    name: str = "return_structured_output",
-) -> ModelResponse:
-    return ModelResponse(
-        **{
-            "choices": [
-                {
-                    "message": {
-                        "tool_calls": [
-                            {
-                                "type": "function",
-                                "function": {
-                                    "name": name,
-                                    "arguments": arguments,
-                                },
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
+def tool_response(arguments, *, name="return_structured_output"):
+    return bedrock_response(
+        [
+            {"toolUse": {"toolUseId": "call_1", "name": name, "input": arguments}},
+        ]
     )
 
 
 def test_forces_one_schema_tool_and_validates_its_arguments() -> None:
-    request: dict[str, Any] = {}
-
-    async def completion(**kwargs: Any) -> ModelResponse:
-        request.update(kwargs)
-        return tool_response('{"answer": "yes", "confidence": 0.9}')
-
-    client = LiteLlmStructuredOutput(
-        LiteLlmClient(settings(), completion=completion),
-    )
-
+    client, runtime = make_client(tool_response({"answer": "yes", "confidence": 0.9}))
     result = asyncio.run(
-        client.complete(
+        LangChainStructuredOutput(client).complete(
             messages=[{"role": "user", "content": "Is it supported?"}],
             response_model=ExampleResponse,
         )
     )
-
     assert result == ExampleResponse(answer="yes", confidence=0.9)
-    assert request["tool_choice"] == {
-        "type": "function",
-        "function": {"name": "return_structured_output"},
+    (request,) = runtime.requests
+    assert request["toolConfig"]["toolChoice"] == {
+        "tool": {"name": "return_structured_output"}
     }
-    assert request["parallel_tool_calls"] is False
-    assert len(request["tools"]) == 1
-    function = request["tools"][0]["function"]
-    assert function["name"] == "return_structured_output"
-    assert function["parameters"] == ExampleResponse.model_json_schema()
+    tools = request["toolConfig"]["tools"]
+    assert len(tools) == 1
+    specification = tools[0]["toolSpec"]
+    assert specification["name"] == "return_structured_output"
+    assert specification["inputSchema"]["json"]["additionalProperties"] is False
+    assert (
+        specification["inputSchema"]["json"]["properties"]["confidence"]["maximum"]
+        == 1.0
+    )
 
 
-def test_rejects_plain_text_when_provider_ignores_forced_tool() -> None:
-    async def completion(**kwargs: Any) -> ModelResponse:
-        return ModelResponse(
-            choices=[{"message": {"content": '{"answer": "yes"}'}}],
+@pytest.mark.parametrize(
+    "response,match",
+    [
+        (bedrock_response(), "expected exactly one"),
+        (
+            tool_response({"answer": "yes", "confidence": 0.9}, name="some_other_tool"),
+            "some_other_tool",
+        ),
+        (tool_response({"answer": "yes", "confidence": 4}), "failed validation"),
+        (
+            tool_response({"answer": "yes", "confidence": 0.9, "unexpected": "extra"}),
+            "failed validation",
+        ),
+    ],
+)
+def test_invalid_responses_do_not_become_workflow_results(response, match) -> None:
+    client, _ = make_client(response)
+    with pytest.raises(StructuredOutputError, match=match):
+        asyncio.run(
+            LangChainStructuredOutput(client).complete(
+                messages=[], response_model=ExampleResponse
+            )
         )
 
-    client = LiteLlmStructuredOutput(
-        LiteLlmClient(settings(), completion=completion),
-    )
 
-    with pytest.raises(StructuredOutputError, match="ignored the forced tool call"):
-        asyncio.run(client.complete(messages=[], response_model=ExampleResponse))
+def test_invalid_tool_arguments_cannot_be_ignored_alongside_a_valid_call() -> None:
+    class Client:
+        async def complete(self, **kwargs):
+            return AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "return_structured_output",
+                        "args": {"answer": "yes", "confidence": 0.9},
+                        "id": "valid",
+                    }
+                ],
+                invalid_tool_calls=[
+                    {
+                        "name": "return_structured_output",
+                        "args": "{invalid",
+                        "id": "invalid",
+                        "error": "bad JSON",
+                        "type": "invalid_tool_call",
+                    }
+                ],
+            )
 
-
-def test_rejects_wrong_tool_name() -> None:
-    async def completion(**kwargs: Any) -> ModelResponse:
-        return tool_response(
-            {"answer": "yes", "confidence": 0.9},
-            name="some_other_tool",
+    with pytest.raises(StructuredOutputError, match="malformed tool arguments"):
+        asyncio.run(
+            LangChainStructuredOutput(Client()).complete(
+                messages=[], response_model=ExampleResponse
+            )
         )
 
-    client = LiteLlmStructuredOutput(
-        LiteLlmClient(settings(), completion=completion),
-    )
 
-    with pytest.raises(StructuredOutputError, match="some_other_tool"):
-        asyncio.run(client.complete(messages=[], response_model=ExampleResponse))
+def test_multiple_native_tool_calls_are_rejected() -> None:
+    class Client:
+        async def complete(self, **kwargs):
+            return AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "return_structured_output",
+                        "args": {"answer": "yes", "confidence": 0.9},
+                        "id": "one",
+                    },
+                    {
+                        "name": "return_structured_output",
+                        "args": {"answer": "yes", "confidence": 0.9},
+                        "id": "two",
+                    },
+                ],
+            )
 
-
-def test_rejects_schema_invalid_tool_arguments() -> None:
-    async def completion(**kwargs: Any) -> ModelResponse:
-        return tool_response('{"answer": "yes", "confidence": 4}')
-
-    client = LiteLlmStructuredOutput(
-        LiteLlmClient(settings(), completion=completion),
-    )
-
-    with pytest.raises(StructuredOutputError, match="failed validation"):
-        asyncio.run(client.complete(messages=[], response_model=ExampleResponse))
+    with pytest.raises(StructuredOutputError, match="expected exactly one"):
+        asyncio.run(
+            LangChainStructuredOutput(Client()).complete(
+                messages=[], response_model=ExampleResponse
+            )
+        )

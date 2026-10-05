@@ -102,16 +102,17 @@ class GraphRagSettings(BaseSettings):
     Attributes:
         data_profile: Dataset-specific interpretation and property-promotion
             settings.
-        llm_url: Base HTTP URL used for LLM requests.
-        llm_api_key: Secret credential sent to the configured LLM provider.
+        llm_url: Optional Bedrock endpoint override.
+        llm_api_key: Optional Bedrock API key; otherwise use AWS credentials.
+        llm_region: Optional AWS region; otherwise use AWS configuration.
+        llm_aws_profile: Optional AWS credential profile.
         llm_model: Provider-specific model identifier.
-        llm_provider: LiteLLM provider identifier or equivalent provider name.
+        llm_provider: Bedrock provider selector for the default chat model.
         llm_temperature: Sampling temperature used for model requests.
         llm_max_tokens: Maximum number of output tokens requested from the
             model.
-        llm_timeout_seconds: End-to-end timeout for one provider request.
-        llm_num_retries: Number of transient provider retries performed by
-            LiteLLM.
+        llm_timeout_seconds: SDK connection and read timeout.
+        llm_num_retries: Number of transient retries performed by the AWS SDK.
         node_retry_max_attempts: Maximum LangGraph attempts, including the
             first attempt, for retryable nodes.
         graph_db_mcp_url: HTTP URL of the MCP service that exposes graph tools.
@@ -138,10 +139,12 @@ class GraphRagSettings(BaseSettings):
     data_profile: GraphDataProfile
 
     # LLM configuration
-    llm_url: AnyHttpUrl
-    llm_api_key: SecretStr
+    llm_url: AnyHttpUrl | None = None
+    llm_api_key: SecretStr | None = None
+    llm_region: NonEmptyStr | None = None
+    llm_aws_profile: NonEmptyStr | None = None
     llm_model: NonEmptyStr
-    llm_provider: NonEmptyStr
+    llm_provider: NonEmptyStr = "bedrock_converse"
     llm_temperature: float = Field(default=0.0, ge=0.0)
     llm_max_tokens: int = Field(default=4096, ge=1)
     llm_timeout_seconds: float = Field(default=60.0, gt=0.0)

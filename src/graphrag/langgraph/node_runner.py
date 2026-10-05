@@ -1,10 +1,12 @@
-from typing import Any, Mapping, Sequence, TypeVar
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeVar
 
-from litellm.types.utils import ModelResponse
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage
 
 from graphrag.config.graph_rag_config import GraphRagSettings
-from graphrag.llm import LiteLlmClient
-from graphrag.llm.structured_output import LiteLlmStructuredOutput
+from graphrag.llm import LangChainClient
+from graphrag.llm.structured_output import LangChainStructuredOutput, ToolDefinition
 from graphrag.model.base import ContractModel
 
 ResponseModel = TypeVar("ResponseModel", bound=ContractModel)
@@ -16,18 +18,20 @@ class GraphRagNodeRunner:
     def __init__(
         self,
         settings: GraphRagSettings,
-    ):
+        *,
+        chat_model: BaseChatModel | None = None,
+    ) -> None:
         self.settings = settings
-        self.client = LiteLlmClient(settings)
-        self.structured_output = LiteLlmStructuredOutput(self.client)
+        self.client = LangChainClient(settings, chat_model=chat_model)
+        self.structured_output = LangChainStructuredOutput(self.client)
 
     async def invoke_agent(
         self,
         messages: Sequence[Mapping[str, Any]],
-        tools: Sequence[Mapping[str, Any]] | None,
+        tools: Sequence[ToolDefinition] | None,
         parallel_tool_calls: bool,
         response_model: type[ContractModel],
-    ) -> ModelResponse:
+    ) -> AIMessage:
         """Preserve the original raw agent-completion boundary."""
 
         del response_model

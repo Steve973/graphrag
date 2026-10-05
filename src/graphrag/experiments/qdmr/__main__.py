@@ -18,10 +18,10 @@ async def run(args: argparse.Namespace) -> int:
         name = backend.name
     else:
         from .cli_backend import CliClient, LlmSettings
-        from graphrag.llm.structured_output import LiteLlmStructuredOutput
+        from graphrag.llm.structured_output import LangChainStructuredOutput
 
         settings = LlmSettings()
-        backend = LiteLlmStructuredOutput(CliClient(settings))
+        backend = LangChainStructuredOutput(CliClient(settings))
         name = settings.model_name
     if args.file:
         questions = Path(args.file).read_text(encoding="utf-8").splitlines()

@@ -1,17 +1,16 @@
-"""Provider-neutral structured LLM output through a forced tool call."""
+"""Schema-validated output through one forced LangChain tool call."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from typing import Any, Protocol, TypeVar
 
+from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ValidationError
 
-from litellm.types.utils import ModelResponse
-
-
 StructuredModel = TypeVar("StructuredModel", bound=BaseModel)
-
+ToolDefinition = BaseTool | dict[str, Any] | type[BaseModel]
 _OUTPUT_TOOL_NAME = "return_structured_output"
 
 
@@ -20,128 +19,62 @@ class StructuredOutputError(ValueError):
 
 
 class ChatCompletionClient(Protocol):
-    """Transport contract used by the structured-output adapter."""
+    """Native LangChain transport contract used by the structured-output adapter."""
 
     async def complete(
         self,
         *,
-        messages: Sequence[Mapping[str, Any]],
-        tools: Sequence[Mapping[str, Any]] | None = None,
-        tool_choice: str | Mapping[str, Any] | None = None,
+        messages: Sequence[Mapping[str, Any] | BaseMessage],
+        tools: Sequence[ToolDefinition] | None = None,
+        tool_choice: str | None = None,
         parallel_tool_calls: bool | None = None,
-    ) -> ModelResponse: ...
+    ) -> AIMessage: ...
 
 
-class LiteLlmStructuredOutput:
-    """Request and validate structured output across LiteLLM providers.
+class LangChainStructuredOutput:
+    """Preserve the workflow's single forced call and Pydantic validation.
 
-    The response schema is exposed as the arguments of a single synthetic
-    function tool. Selecting that function explicitly is stronger than asking
-    for JSON in prompt text and works across providers that implement tool
-    calling through LiteLLM's OpenAI-compatible interface.
+    The synthetic StructuredTool specifies the output format. It is not executed;
+    its arguments are validated against the caller's existing response model.
+    Native model/provider exceptions propagate to the workflow retry policy.
     """
 
-    def __init__(
-        self,
-        client: ChatCompletionClient,
-    ) -> None:
+    def __init__(self, client: ChatCompletionClient) -> None:
         self._client = client
 
     async def complete(
         self,
         *,
-        messages: Sequence[Mapping[str, Any]],
+        messages: Sequence[Mapping[str, Any] | BaseMessage],
         response_model: type[StructuredModel],
     ) -> StructuredModel:
-        """Return one response validated against ``response_model``.
-
-        Args:
-            messages: OpenAI-compatible chat messages.
-            response_model: Pydantic model defining the required response.
-
-        Raises:
-            StructuredOutputError: If the provider does not make exactly one
-                matching tool call or its arguments fail model validation.
-            Exception: Provider and transport exceptions from LiteLLM are
-                intentionally allowed to propagate for separate classification.
-        """
-
         response = await self._client.complete(
             messages=list(messages),
-            tools=[self._output_tool(response_model)],
-            tool_choice={
-                "type": "function",
-                "function": {"name": _OUTPUT_TOOL_NAME},
-            },
+            tools=[
+                StructuredTool(
+                    name=_OUTPUT_TOOL_NAME,
+                    description="Return the complete response exactly once with every required field.",
+                    # Keep the full schema: class-based tool conversion drops extra="forbid".
+                    args_schema=response_model.model_json_schema(),
+                )
+            ],
+            tool_choice=_OUTPUT_TOOL_NAME,
             parallel_tool_calls=False,
         )
-
-        arguments = self._extract_arguments(response)
+        if response.invalid_tool_calls:
+            raise StructuredOutputError("Model returned malformed tool arguments")
+        if len(response.tool_calls) != 1:
+            raise StructuredOutputError(
+                f"Model returned {len(response.tool_calls)} tool calls; expected exactly one"
+            )
+        output_call = response.tool_calls[0]
+        if output_call["name"] != _OUTPUT_TOOL_NAME:
+            raise StructuredOutputError(
+                f"Model called {output_call['name']!r}; expected {_OUTPUT_TOOL_NAME!r}"
+            )
         try:
-            if isinstance(arguments, str):
-                return response_model.model_validate_json(arguments)
-            return response_model.model_validate(arguments)
+            return response_model.model_validate(output_call["args"])
         except ValidationError as error:
             raise StructuredOutputError(
                 f"{response_model.__name__} tool arguments failed validation: {error}"
             ) from error
-
-    @staticmethod
-    def _output_tool(response_model: type[BaseModel]) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "function": {
-                "name": _OUTPUT_TOOL_NAME,
-                "description": (
-                    "Return the complete response. You must call this function "
-                    "exactly once and provide every required field."
-                ),
-                "parameters": response_model.model_json_schema(),
-            },
-        }
-
-    @staticmethod
-    def _extract_arguments(response: Any) -> str | Mapping[str, Any]:
-        choices = _field(response, "choices")
-        if not isinstance(choices, Sequence) or isinstance(choices, (str, bytes)):
-            raise StructuredOutputError("provider response has no choices")
-        if len(choices) != 1:
-            raise StructuredOutputError(
-                f"provider returned {len(choices)} choices; expected exactly one"
-            )
-
-        message = _field(choices[0], "message")
-        tool_calls = _field(message, "tool_calls")
-        if not isinstance(tool_calls, Sequence) or isinstance(
-            tool_calls,
-            (str, bytes),
-        ):
-            raise StructuredOutputError(
-                "provider ignored the forced tool call and returned no tool call"
-            )
-        if len(tool_calls) != 1:
-            raise StructuredOutputError(
-                f"provider returned {len(tool_calls)} tool calls; expected exactly one"
-            )
-
-        function = _field(tool_calls[0], "function")
-        name = _field(function, "name")
-        if name != _OUTPUT_TOOL_NAME:
-            raise StructuredOutputError(
-                f"provider called {name!r}; expected {_OUTPUT_TOOL_NAME!r}"
-            )
-
-        arguments = _field(function, "arguments")
-        if not isinstance(arguments, (str, Mapping)):
-            raise StructuredOutputError(
-                "forced output tool arguments must be a JSON string or object"
-            )
-        return arguments
-
-
-def _field(value: Any, name: str) -> Any:
-    """Read one field from either LiteLLM objects or mapping-based test doubles."""
-
-    if isinstance(value, Mapping):
-        return value.get(name)
-    return getattr(value, name, None)

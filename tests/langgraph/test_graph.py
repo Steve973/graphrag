@@ -18,7 +18,7 @@ from graphrag.langgraph.contracts import (
 from graphrag.langgraph import graph as graph_module
 from graphrag.langgraph.graph import build_graph_rag_graph
 from graphrag.langgraph.node_runner import GraphRagNodeRunner
-from graphrag.llm.structured_output import LiteLlmStructuredOutput
+from graphrag.llm.structured_output import LangChainStructuredOutput
 from graphrag.model.action import (
     CallToolAction,
     FinalizeAction,
@@ -493,34 +493,31 @@ def test_node_runner_invokes_structured_output() -> None:
 
     request: dict[str, Any] = {}
 
+    from langchain_core.messages import AIMessage
+    from langchain_core.tools import StructuredTool
+    from tests.llm.test_client import make_client
+
     class Client:
-        async def complete(self, **kwargs: Any) -> Any:
+        async def complete(self, **kwargs: Any) -> AIMessage:
             request.update(kwargs)
             plan = Plan(
                 objective="Answer the question",
                 steps=[PlanStep(description="Read data")],
             )
-            return {
-                "choices": [
+            return AIMessage(
+                content="",
+                tool_calls=[
                     {
-                        "message": {
-                            "tool_calls": [
-                                {
-                                    "function": {
-                                        "name": "return_structured_output",
-                                        "arguments": plan.model_dump_json(),
-                                    }
-                                }
-                            ]
-                        }
+                        "name": "return_structured_output",
+                        "args": plan.model_dump(mode="json"),
+                        "id": "plan",
                     }
-                ]
-            }
+                ],
+            )
 
-    runner = GraphRagNodeRunner(settings())
-    runner.structured_output = LiteLlmStructuredOutput(
-        Client(),  # type: ignore[arg-type]
-    )
+    transport, _ = make_client()
+    runner = GraphRagNodeRunner(settings(), chat_model=transport.chat_model)
+    runner.structured_output = LangChainStructuredOutput(Client())
     messages: Sequence[Mapping[str, Any]] = [{"role": "user", "content": "hello"}]
     result = asyncio.run(
         runner.invoke_structured(
@@ -531,5 +528,7 @@ def test_node_runner_invokes_structured_output() -> None:
 
     assert isinstance(result, Plan)
     assert request["messages"] == list(messages)
-    assert request["tool_choice"]["function"]["name"] == "return_structured_output"
-    assert request["tools"][0]["function"]["parameters"] == Plan.model_json_schema()
+    assert request["tool_choice"] == "return_structured_output"
+    output_tool = request["tools"][0]
+    assert isinstance(output_tool, StructuredTool)
+    assert output_tool.args_schema == Plan.model_json_schema()

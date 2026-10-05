@@ -3,16 +3,16 @@
 from copy import deepcopy
 
 import httpx
+from botocore.exceptions import (
+    ClientError,
+    ConnectionClosedError,
+    ConnectTimeoutError,
+    EndpointConnectionError,
+    ReadTimeoutError,
+)
 from langgraph.errors import NodeError
 from langgraph.graph import END
 from langgraph.types import Command, RetryPolicy
-from litellm.exceptions import (
-    APIConnectionError,
-    InternalServerError,
-    RateLimitError,
-    ServiceUnavailableError,
-    Timeout,
-)
 
 from graphrag.llm.structured_output import StructuredOutputError
 from graphrag.model.base import ErrorCategory, WorkflowStatus
@@ -21,13 +21,38 @@ from graphrag.model.rag_state import GraphRagState
 from graphrag.model.workflow import WorkflowError
 
 TRANSIENT_PROVIDER_ERRORS = (
-    APIConnectionError,
-    InternalServerError,
-    RateLimitError,
-    ServiceUnavailableError,
-    Timeout,
+    ConnectionClosedError,
+    ConnectTimeoutError,
+    EndpointConnectionError,
+    ReadTimeoutError,
     ConnectionError,
+    TimeoutError,
 )
+
+
+def _retry_inference_error(error: BaseException) -> bool:
+    """Classify AWS transport, throttling and server errors without retrying auth failures."""
+
+    if isinstance(error, TRANSIENT_PROVIDER_ERRORS):
+        return True
+    if isinstance(error, ClientError):
+        details = error.response
+        code = details.get("Error", {}).get("Code")
+        status = details.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)
+        return (
+            status == 429
+            or status >= 500
+            or code
+            in {
+                "ThrottlingException",
+                "TooManyRequestsException",
+                "ModelNotReadyException",
+                "ModelTimeoutException",
+                "InternalServerException",
+                "ServiceUnavailableException",
+            }
+        )
+    return False
 
 
 def inference_retry_policies(
@@ -48,7 +73,7 @@ def inference_retry_policies(
     return (
         RetryPolicy(
             max_attempts=max_attempts,
-            retry_on=TRANSIENT_PROVIDER_ERRORS,
+            retry_on=_retry_inference_error,
             **common,
         ),
         RetryPolicy(
@@ -122,7 +147,7 @@ def _error_category(node: str, error: BaseException) -> ErrorCategory:
 
     if isinstance(error, StructuredOutputError):
         return ErrorCategory.LLM_VALIDATION
-    if isinstance(error, TRANSIENT_PROVIDER_ERRORS):
+    if isinstance(error, (*TRANSIENT_PROVIDER_ERRORS, ClientError)):
         return (
             ErrorCategory.MCP_CONNECTION
             if node in {"initialize", "execute"}
