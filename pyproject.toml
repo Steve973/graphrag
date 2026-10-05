@@ -20,6 +20,7 @@ dependencies = [
   "pydantic-settings==2.14.2",
   "pymongo==4.17.0",
   "ragas==0.4.3",
+  "rdflib==7.6.0",
   "uvicorn[standard]==0.51.0",
 ]
 

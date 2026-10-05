@@ -2,7 +2,7 @@
   "schema_version": "question-semantics/1",
   "method": "llm_semantic_analysis",
   "backend": "codex/cli-default",
-  "question": "Show me the top five experts in feline cardiomyopathy. An expert would have authored or co-authored at least 4 publications on this subject. Top experts would have more authored or co-authored publications, bub. If an exerts are tied, you can list all of the tied experts at that ranking instead of limiting it to exactly five experts. your last attempt was dumb; this is not the people who are tied at fifth place, dumbass. it is the top five rankings in terms of authoriship.",
+  "question": "Show me the top five experts in feline cardiomyopathy. An expert would have authored or co-authored at least 4 publications on this subject. Top experts would have more authored or co-authored publications, bub. If an exerts are tied, you can list all of the tied experts at each ranking instead of limiting it to exactly five experts.",
   "decomposition": {
     "concepts": [
       {

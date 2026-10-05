@@ -18,6 +18,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from graphrag.config.ontology_config import OntologySettings
 from graphrag.model.base import NonEmptyStr
 from graphrag.service.checkpointer import CheckpointerType
 
@@ -39,6 +40,7 @@ class GraphDataProfile(BaseModel):
         name: Stable human-readable profile name.
         version: Profile version used to distinguish incompatible profile
             definitions.
+        ontology: Optional native ontology mounted on disk for semantic grounding.
         promote_node_properties: Node-property names that should be promoted
             into compact prompt-oriented graph representations.
         promote_edge_properties: Edge-property names that should be promoted
@@ -53,6 +55,7 @@ class GraphDataProfile(BaseModel):
 
     name: NonEmptyStr = "default"
     version: NonEmptyStr
+    ontology: OntologySettings | None = None
     promote_node_properties: list[NonEmptyStr] = Field(default_factory=list)
     promote_edge_properties: list[NonEmptyStr] = Field(default_factory=list)
 
