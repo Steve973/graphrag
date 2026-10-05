@@ -3,24 +3,23 @@ name = "graphrag"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-  "boto3==1.43.98",
-  "cymple==0.12.0",
-  "fastapi==0.139.2",
-  "langchain-aws==1.4.7",
+  "boto3==1.43.108",
+  "fastapi==0.142.2",
+  "langchain-aws==1.8.0",
   "httpx==0.28.1",
-  "langchain-core==1.4.9",
+  "langchain-core==1.6.6",
   # Ragas 0.4.3 still imports the VertexAI compatibility module removed in 0.4.2.
   "langchain-community==0.4.1",
-  "langgraph==1.2.9",
+  "langgraph==1.2.13",
   "langgraph-checkpoint-mongodb==0.5.0",
-  "mcp==1.28.1",
-  "neo4j==6.2.0",
-  "pydantic==2.13.4",
-  "pydantic-settings==2.14.2",
+  "mcp==1.30.0",
+  "neo4j==6.4.0",
+  "pydantic==2.13.5",
+  "pydantic-settings==2.15.0",
   "pymongo==4.17.0",
   "ragas==0.4.3",
   "rdflib==7.6.0",
-  "uvicorn[standard]==0.51.0",
+  "uvicorn[standard]==0.54.0",
 ]
 
 [dependency-groups]
