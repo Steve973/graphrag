@@ -6,7 +6,6 @@ from pydantic import Field, JsonValue
 
 from graphrag.model.base import ContractModel, NonEmptyStr
 
-
 OntologyQueryType = Literal["SELECT", "ASK", "CONSTRUCT", "DESCRIBE"]
 OntologyDirection = Literal["outgoing", "incoming", "both"]
 
