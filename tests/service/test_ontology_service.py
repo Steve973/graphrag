@@ -14,7 +14,7 @@ from rdflib import Graph
 from graphrag.config.graph_rag_config import GraphDataProfile, GraphRagSettings
 from graphrag.config.ontology_config import OntologySettings
 from graphrag.model.ontology import (
-    OntologyAmbiguityError, OntologyContext, OntologyContextLimits,
+    OntologyContext, OntologyContextLimits,
     OntologyLoadError, OntologyNotFoundError, OntologyQueryError, OntologyUnsupportedError,
 )
 from graphrag.service.ontology_service import OntologyService, create_ontology_tools
@@ -70,7 +70,7 @@ def test_metadata_resolution_search_and_source(service: OntologyService) -> None
     assert entity.types == (OWL_NS + 'Class',)
     assert entity.aliases == ('Institution', 'Shared')
     assert service.get_entity(entity.identifier) == entity
-    assert service.resolve_entity('institution') == entity
+    assert service.resolve('institution').candidates[0] == entity
     assert service.search('NSTIT').entities == (entity,)
     assert service.search('NSTIT', exact=True).total_matches == 0
     assert service.search('EX:Organization', exact=True).entities == (entity,)
@@ -83,29 +83,53 @@ def test_ambiguity_and_unknown_terms_are_explicit(service: OntologyService) -> N
     result = service.resolve('Shared', limit=1)
     assert result.status == 'ambiguous'
     assert result.total_matches == 2 and result.truncated
-    with pytest.raises(OntologyAmbiguityError) as error:
-        service.resolve_entity('Shared')
-    assert error.value.resolution.total_matches == 2
+    assert {candidate.identifier for candidate in service.resolve('Shared').candidates} == {
+        EX + 'Company', EX + 'Organization',
+    }
     assert service.resolve('missing').status == 'not_found'
     with pytest.raises(OntologyNotFoundError):
         service.get_entity('EX:missing')
-    with pytest.raises(OntologyNotFoundError):
-        service.resolve_entity('missing')
 
 
 def test_hierarchy_cycles_direction_and_unknown_properties(service: OntologyService) -> None:
-    parents = service.ancestors('EX:Company')
+    hierarchy_limits = OntologyContextLimits(max_depth=4)
+    relationship_limits = OntologyContextLimits(
+        max_depth=1, max_entities=200, max_relationships=60,
+    )
+    parents = service.neighborhood(
+        ['EX:Company'], direction='outgoing',
+        predicates=[RDFS + 'subClassOf'], limits=hierarchy_limits,
+    )
     assert triples(parents) == {
         (EX + 'Company', RDFS + 'subClassOf', EX + 'Organization'),
         (EX + 'Organization', RDFS + 'subClassOf', EX + 'Entity'),
     }
-    assert len(service.ancestors('EX:CycleA').relationships) == 2
-    assert (EX + 'Person', RDFS + 'subClassOf', EX + 'Entity') in triples(service.descendants('EX:Entity'))
-    assert triples(service.relationships('EX:acme', direction='incoming', predicates=['EX:worksFor'])) == {
+    cycle = service.neighborhood(
+        ['EX:CycleA'], direction='outgoing',
+        predicates=[RDFS + 'subClassOf'], limits=hierarchy_limits,
+    )
+    assert len(cycle.relationships) == 2
+    descendants = service.neighborhood(
+        ['EX:Entity'], direction='incoming',
+        predicates=[RDFS + 'subClassOf'], limits=hierarchy_limits,
+    )
+    assert (EX + 'Person', RDFS + 'subClassOf', EX + 'Entity') in triples(descendants)
+    incoming = service.neighborhood(
+        ['EX:acme'], direction='incoming',
+        predicates=['EX:worksFor'], limits=relationship_limits,
+    )
+    assert triples(incoming) == {
         (EX + 'alice', EX + 'worksFor', EX + 'acme'),
     }
-    assert not service.relationships('EX:Person', predicates=['EX:worksFor']).relationships
-    assert (EX + 'worksFor', RDFS + 'domain', EX + 'Person') in triples(service.relationships('EX:worksFor'))
+    absent = service.neighborhood(
+        ['EX:Person'], direction='outgoing',
+        predicates=['EX:worksFor'], limits=relationship_limits,
+    )
+    assert not absent.relationships
+    property_context = service.neighborhood(
+        ['EX:worksFor'], direction='outgoing', limits=relationship_limits,
+    )
+    assert (EX + 'worksFor', RDFS + 'domain', EX + 'Person') in triples(property_context)
 
 
 def test_context_preserves_original_restrictions_and_literals(service: OntologyService) -> None:
@@ -140,7 +164,10 @@ def test_context_limits_apply_to_metadata_literals_and_resolution(service: Ontol
 
 
 def test_depth_empty_filters_and_zero_relationship_budget(service: OntologyService) -> None:
-    one = service.ancestors('EX:Company', limits=OntologyContextLimits(max_depth=1))
+    one = service.neighborhood(
+        ['EX:Company'], direction='outgoing',
+        predicates=[RDFS + 'subClassOf'], limits=OntologyContextLimits(max_depth=1),
+    )
     assert len(one.relationships) == 1
     assert 'max_depth' in one.truncation_reasons
     assert not service.neighborhood(['EX:Company'], predicates=[]).relationships
@@ -150,22 +177,17 @@ def test_depth_empty_filters_and_zero_relationship_budget(service: OntologyServi
     assert len(small.entities) == 1 and 'max_entities' in small.truncation_reasons
 
 
-def test_new_question_refresh_preserves_active_snapshot(service: OntologyService) -> None:
-    original = service.for_question()
-    assert original is service
-    source = original.initialize()
+def test_initialized_ontology_ignores_resource_changes_and_removal(
+    service: OntologyService,
+) -> None:
+    source = service.initialize()
     path = Path(source.path)
     path.write_text(OWL.replace('"Organization"', '"New label"'))
-    assert original.get_entity('EX:Organization').label == 'Organization'
-    updated = original.for_question()
-    assert updated is not original
-    assert updated.get_entity('EX:Organization').label == 'New label'
-    assert updated.initialize().sha256 != source.sha256
-    assert updated.for_question() is updated
-    path.write_text('invalid ontology')
-    with pytest.raises(OntologyLoadError):
-        updated.for_question()
-    assert updated.get_entity('EX:Organization').label == 'New label'
+    assert service.get_entity("EX:Organization").label == "Organization"
+    assert service.initialize() == source
+    path.unlink()
+    assert service.get_entity("EX:Organization").label == "Organization"
+    assert not hasattr(service, "for_question")
 
 
 @pytest.mark.parametrize('suffix,format_name', [('.owl', None), ('.rdf', 'xml'), ('.bin', 'xml'), ('.nt', 'nt'), ('.n3', 'n3')])
@@ -174,8 +196,12 @@ def test_native_parser_format_selection(tmp_path: Path, suffix: str, format_name
     Graph().parse(data=OWL, format='turtle').serialize(destination=path, format=format_name or 'xml', encoding='utf-8')
     contents = path.read_bytes()
     reader = OntologyService(OntologySettings(path=path, format=format_name))
-    assert reader.resolve_entity('Institution').identifier == EX + 'Organization'
-    assert len(reader.ancestors(EX + 'Company').relationships) == 2
+    assert reader.resolve('Institution').candidates[0].identifier == EX + 'Organization'
+    parents = reader.neighborhood(
+        [EX + 'Company'], direction='outgoing',
+        predicates=[RDFS + 'subClassOf'], limits=OntologyContextLimits(max_depth=4),
+    )
+    assert len(parents.relationships) == 2
     assert path.read_bytes() == contents
 
 
@@ -186,27 +212,35 @@ def test_owlxml_requires_rdf_export(tmp_path: Path) -> None:
         OntologyService(OntologySettings(path=path)).initialize()
 
 
-def test_local_import_closure_and_refresh(tmp_path: Path) -> None:
-    root, imported = tmp_path / 'root.ttl', tmp_path / 'import.ttl'
-    root.write_text('@prefix owl: <http://www.w3.org/2002/07/owl#> . <http://example.org/root> owl:imports <http://example.org/import> .')
-    imported.write_text(OWL + '<http://example.org/ontology> owl:imports <http://example.org/root> .')
-    reader = OntologyService(OntologySettings(path=root, imports={'http://example.org/import': imported, 'http://example.org/root': root}))
+def test_local_import_closure_loads_once(
+    tmp_path: Path,
+) -> None:
+    root, imported = tmp_path / "root.ttl", tmp_path / "import.ttl"
+    root.write_text(
+        "@prefix owl: <http://www.w3.org/2002/07/owl#> . <http://example.org/root> owl:imports <http://example.org/import> ."
+    )
+    imported.write_text(
+        OWL + "<http://example.org/ontology> owl:imports <http://example.org/root> ."
+    )
+    reader = OntologyService(
+        OntologySettings(
+            path=root,
+            imports={
+                "http://example.org/import": imported,
+                "http://example.org/root": root,
+            },
+        )
+    )
     source = reader.initialize()
-    assert len(source.imported_files) == 1
-    assert not source.warnings and reader.for_question() is reader
-    imported.write_text(OWL.replace('"Organization"', '"New label"'))
-    updated = reader.for_question()
-    assert reader.get_entity('EX:Organization').label == 'Organization'
-    assert updated.get_entity('EX:Organization').label == 'New label'
-    assert updated.initialize().sha256 == source.sha256
-    assert updated.initialize().imported_files[0].sha256 != source.imported_files[0].sha256
+    assert len(source.imported_files) == 1 and not source.warnings
     imported.unlink()
-    with pytest.raises(OntologyLoadError):
-        updated.for_question()
+    root.unlink()
+    assert reader.initialize() == source
+    assert reader.get_entity("EX:Organization").label == "Organization"
 
 
 def test_unmapped_imports_are_explicit(tmp_path: Path) -> None:
-    path = tmp_path / 'ontology.ttl'
+    path = tmp_path / "ontology.ttl"
     path.write_text(OWL + '<http://example.org/ontology> owl:imports <https://remote.example/ontology> .')
     settings = OntologySettings(path=path)
     reader = OntologyService(settings)
@@ -243,7 +277,10 @@ def test_literal_whitespace_language_and_datatype_are_preserved(tmp_path: Path) 
     path = tmp_path / 'ontology.ttl'
     path.write_text(OWL + 'EX:Person EX:text "  spaced  "@en, ""; EX:count 7 .')
     reader = OntologyService(OntologySettings(path=path))
-    edges = reader.relationships('EX:Person', predicates=['EX:text', 'EX:count']).relationships
+    edges = reader.neighborhood(
+        ['EX:Person'], direction='outgoing', predicates=['EX:text', 'EX:count'],
+        limits=OntologyContextLimits(max_depth=1, max_entities=200, max_relationships=60),
+    ).relationships
     assert {edge.object for edge in edges} == {'  spaced  ', '', '7'}
     assert next(edge for edge in edges if edge.object == '7').datatype == 'http://www.w3.org/2001/XMLSchema#integer'
     assert next(edge for edge in edges if edge.object == '  spaced  ').language == 'en'
@@ -319,7 +356,7 @@ def test_invalid_configuration_arguments_and_retry(tmp_path: Path, service: Onto
     with pytest.raises(OntologyLoadError):
         reader.initialize()
     path.write_text(OWL)
-    assert reader.resolve_entity('Company').identifier == EX + 'Company'
+    assert reader.resolve('Company').candidates[0].identifier == EX + 'Company'
     with pytest.raises(ValidationError):
         OntologyContextLimits(max_depth=-1)
     for call in (lambda: service.resolve(' '), lambda: service.search('x', limit=0),
@@ -339,29 +376,84 @@ def test_nested_profile_environment(service: OntologyService, monkeypatch: pytes
         llm_model='test', llm_provider='test', graph_db_mcp_url='https://graph.example.test/mcp',
         graph_db_username='neo4j', graph_db_password='secret', graph_db_database='neo4j',
     )
-    assert OntologyService.from_profile(settings.data_profile).resolve_entity('Company').identifier == EX + 'Company'
+    assert OntologyService.from_profile(settings.data_profile).resolve('Company').candidates[0].identifier == EX + 'Company'
 
 
 def test_langchain_ontology_tools_expose_validated_schemas_and_payloads(service: OntologyService) -> None:
-    tools = {tool.name: tool for tool in create_ontology_tools(service)}
-    assert set(tools) == {'ontology_search', 'ontology_context', 'ontology_sparql'}
+    tools = {tool.name: tool for tool in create_ontology_tools(service, include_sparql=True)}
+    assert set(tools) == {
+        'ontology_search', 'ontology_context', 'ontology_sparql',
+        'ontology_relationships', 'ontology_ancestors', 'ontology_descendants',
+    }
     schema = tools['ontology_context'].get_input_schema().model_json_schema()
-    assert set(schema['properties']) == {'terms', 'direction', 'predicates', 'limits'}
+    assert set(schema['properties']) == {
+        'terms', 'direction', 'predicates', 'max_depth',
+        'max_entities', 'max_relationships',
+    }
     assert schema['properties']['terms']['maxItems'] == 20
     hits = tools['ontology_search'].invoke({'query': 'Institution', 'limit': 1})
     assert hits['entities'][0]['identifier'] == EX + 'Organization'
     assert tools['ontology_sparql'].invoke({'query': 'ASK {EX:Company a owl:Class}'})['data']['boolean'] is True
     context = tools['ontology_context'].invoke({
         'terms': ['Shared', 'missing', 'Institution'],
-        'limits': {'max_depth': 1, 'max_relationships': 1},
     })
-    assert [resolution['status'] for resolution in context['resolutions']] == ['ambiguous', 'not_found', 'resolved']
-    assert len(context['neighborhood']['relationships']) <= 1
-    assert context['source']['sha256'] == service.initialize().sha256
+    assert [resolution['status'] for resolution in context['ontology']['resolutions']] == ['ambiguous', 'not_found', 'resolved']
+    assert len(context['ontology']['neighborhood']['relationships']) <= 60
+    assert context['ontology']['source']['sha256'] == service.initialize().sha256
+
+
+def test_named_traversal_tools_preserve_direction_and_original_statements(service: OntologyService) -> None:
+    tools = {tool.name: tool for tool in create_ontology_tools(service)}
+    parents = tools['ontology_ancestors'].invoke({'term': 'EX:Company'})
+    assert {tuple(edge[k] for k in ('subject', 'predicate', 'object'))
+            for edge in parents['ontology']['neighborhood']['relationships']} == {
+        (EX + 'Company', RDFS + 'subClassOf', EX + 'Organization'),
+        (EX + 'Organization', RDFS + 'subClassOf', EX + 'Entity'),
+    }
+    children = tools['ontology_descendants'].invoke({'term': 'EX:Entity'})
+    assert children['ontology']['neighborhood']['direction'] == 'incoming'
+    assert EX + 'Company' in {
+        entity['identifier'] for entity in children['ontology']['neighborhood']['entities']
+    }
+    shallow = tools['ontology_ancestors'].invoke({'term': 'EX:Company', 'max_depth': 1})
+    assert 'max_depth' in shallow['ontology']['neighborhood']['truncation_reasons']
+    incoming = tools['ontology_relationships'].invoke({
+        'term': 'EX:acme', 'direction': 'incoming', 'predicates': ['EX:worksFor'],
+    })
+    assert [(edge['subject'], edge['object'])
+            for edge in incoming['ontology']['neighborhood']['relationships']] == [
+        (EX + 'alice', EX + 'acme'),
+    ]
+    ambiguous = tools['ontology_ancestors'].invoke({'term': 'Shared'})
+    assert ambiguous['ontology']['resolutions'][0]['status'] == 'ambiguous'
+    assert not ambiguous['ontology']['neighborhood']['seed_ids']
+    missing = tools['ontology_descendants'].invoke({'term': 'missing'})
+    assert missing['ontology']['resolutions'][0]['status'] == 'not_found'
+
+
+def test_context_tool_can_focus_and_expand_a_truncated_neighborhood(service: OntologyService) -> None:
+    tool = next(tool for tool in create_ontology_tools(service) if tool.name == 'ontology_context')
+    arguments = {
+        'terms': ['EX:Company'], 'direction': 'outgoing',
+        'predicates': ['rdfs:subClassOf'], 'max_depth': 4,
+    }
+    small = tool.invoke({**arguments, 'max_entities': 1})
+    assert 'max_entities' in small['ontology']['neighborhood']['truncation_reasons']
+    complete = tool.invoke({**arguments, 'max_entities': 3, 'max_relationships': 2})
+    assert len(complete['ontology']['neighborhood']['relationships']) == 2
+    assert not complete['ontology']['neighborhood']['truncation_reasons']
+    definitions_only = tool.invoke({'terms': ['Company'], 'max_depth': 0})
+    assert not definitions_only['ontology']['neighborhood']['relationships']
+    assert definitions_only['ontology']['resolutions'][0]['status'] == 'resolved'
+    restriction = tool.invoke({
+        'terms': ['Person'], 'direction': 'outgoing', 'max_depth': 2,
+    })
+    assert any(edge['predicate'] == OWL_NS + 'someValuesFrom'
+               for edge in restriction['ontology']['neighborhood']['relationships'])
 
 
 def test_langchain_tool_call_returns_json_tool_message(service: OntologyService) -> None:
-    tool = next(tool for tool in create_ontology_tools(service) if tool.name == 'ontology_context')
+    tool = next(tool for tool in create_ontology_tools(service, include_sparql=True) if tool.name == 'ontology_context')
     message = tool.invoke({
         'type': 'tool_call', 'name': tool.name, 'id': 'ontology-call-1',
         'args': {'terms': ['Institution']},
@@ -370,46 +462,64 @@ def test_langchain_tool_call_returns_json_tool_message(service: OntologyService)
     assert message.tool_call_id == 'ontology-call-1' and message.status == 'success'
     assert isinstance(message.content, str)
     payload = json.loads(message.content)
-    assert payload['resolutions'][0]['candidates'][0]['identifier'] == EX + 'Organization'
-    assert payload['source']['sha256'] == service.initialize().sha256
+    assert payload['ontology']['resolutions'][0]['candidates'][0]['identifier'] == EX + 'Organization'
+    assert payload['ontology']['source']['sha256'] == service.initialize().sha256
 
 
 @pytest.mark.parametrize('tool_name,arguments', [
     ('ontology_search', {'query': 'Thing', 'limit': 0}),
     ('ontology_search', {'query': ' '}),
     ('ontology_context', {'terms': []}),
+    ('ontology_context', {'terms': [' ']}),
+    ('ontology_context', {'terms': ['Person'] * 21}),
     ('ontology_context', {'terms': ['Person'], 'direction': 'sideways'}),
-    ('ontology_context', {'terms': ['Person'], 'limits': {'max_depth': -1}}),
+    ('ontology_context', {'terms': ['Person'], 'max_depth': 9}),
+    ('ontology_context', {'terms': ['Person'], 'max_entities': 0}),
+    ('ontology_context', {'terms': ['Person'], 'max_relationships': -1}),
+    ('ontology_relationships', {'term': 'Person', 'predicates': [' ']}),
+    ('ontology_ancestors', {'term': 'Company', 'max_depth': 0}),
+    ('ontology_descendants', {'term': ' '}),
     ('ontology_sparql', {'query': 'ASK {}', 'limit': 201}),
 ])
 def test_langchain_validation_errors_are_agent_observations(service: OntologyService, tool_name: str, arguments: dict) -> None:
-    tool = next(tool for tool in create_ontology_tools(service) if tool.name == tool_name)
+    tool = next(tool for tool in create_ontology_tools(service, include_sparql=True) if tool.name == tool_name)
     message = tool.invoke({'type': 'tool_call', 'name': tool.name, 'id': 'invalid-call', 'args': arguments})
     assert isinstance(message, ToolMessage) and message.status == 'error'
     assert isinstance(message.content, str) and message.content.startswith('Invalid ontology tool arguments:')
 
 
 def test_langchain_query_errors_are_agent_observations(service: OntologyService) -> None:
-    tool = next(tool for tool in create_ontology_tools(service) if tool.name == 'ontology_sparql')
-    for query in ('SELECT invalid', 'DELETE WHERE {?s ?p ?o}', 'ASK {SERVICE <https://example.test> {?s ?p ?o}}'):
-        message = tool.invoke({'type': 'tool_call', 'name': tool.name, 'id': 'failed-query', 'args': {'query': query}})
-        assert isinstance(message, ToolMessage) and message.status == 'error'
-        assert isinstance(message.content, str) and message.content.startswith(('OntologyQueryError:', 'OntologyUnsupportedError:'))
-    assert service.get_entity('EX:Organization').label == 'Organization'
+    tool = next(tool for tool in create_ontology_tools(service, include_sparql=True) if tool.name == 'ontology_sparql')
+    for query in (
+        "SELECT invalid",
+        "DELETE WHERE {?s ?p ?o}",
+        "ASK {SERVICE <https://example.test> {?s ?p ?o}}",
+    ):
+        message = tool.invoke(
+            {
+                "type": "tool_call",
+                "name": tool.name,
+                "id": "failed-query",
+                "args": {"query": query},
+            }
+        )
+        assert isinstance(message, ToolMessage) and message.status == "error"
+        assert isinstance(message.content, str) and message.content.startswith(
+            ("OntologyQueryError:", "OntologyUnsupportedError:")
+        )
+    assert service.get_entity("EX:Organization").label == "Organization"
 
 
-def test_langchain_tools_remain_bound_to_question_snapshot(service: OntologyService) -> None:
-    original = service.for_question()
-    original_tools = {tool.name: tool for tool in create_ontology_tools(original)}
-    original_context = original_tools['ontology_context'].invoke({'terms': ['Institution']})
-    Path(original.initialize().path).write_text(OWL.replace('"Organization"', '"Updated label"'))
-    unchanged_context = original_tools['ontology_context'].invoke({'terms': ['Institution']})
-    assert unchanged_context == original_context
-    refreshed = original.for_question()
-    refreshed_tools = {tool.name: tool for tool in create_ontology_tools(refreshed)}
-    new_context = refreshed_tools['ontology_context'].invoke({'terms': ['Institution']})
-    assert new_context['resolutions'][0]['candidates'][0]['label'] == 'Updated label'
-    assert new_context['source']['sha256'] != original_context['source']['sha256']
+def test_langchain_tools_reuse_initialized_resources(
+    service: OntologyService,
+) -> None:
+    service.initialize()
+    tools = {tool.name: tool for tool in create_ontology_tools(service, include_sparql=True)}
+    original_context = tools["ontology_context"].invoke({"terms": ["Institution"]})
+    Path(service.initialize().path).unlink()
+    assert (
+        tools["ontology_context"].invoke({"terms": ["Institution"]}) == original_context
+    )
 
 
 def test_langchain_async_tool_invocation_uses_worker_thread(service: OntologyService, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -422,7 +532,7 @@ def test_langchain_async_tool_invocation_uses_worker_thread(service: OntologySer
         return original_context(*args, **kwargs)
 
     monkeypatch.setattr(service, 'get_context', tracked_context)
-    tool = next(tool for tool in create_ontology_tools(service) if tool.name == 'ontology_context')
+    tool = next(tool for tool in create_ontology_tools(service, include_sparql=True) if tool.name == 'ontology_context')
     result = asyncio.run(tool.ainvoke({'terms': ['Institution']}))
-    assert result['resolutions'][0]['status'] == 'resolved'
+    assert result['ontology']['resolutions'][0]['status'] == 'resolved'
     assert len(execution_threads) == 1 and execution_threads[0] != caller_thread

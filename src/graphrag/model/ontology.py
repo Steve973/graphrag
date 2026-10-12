@@ -14,7 +14,8 @@ class OntologyFileSource(ContractModel):
     """Identify one file included in the loaded ontology snapshot."""
 
     path: NonEmptyStr
-    sha256: NonEmptyStr
+    sha256: NonEmptyStr | None = None
+    revision: NonEmptyStr | None = None
 
 
 class OntologySource(OntologyFileSource):
@@ -146,17 +147,3 @@ class OntologyUnsupportedError(OntologyQueryError):
 
 class OntologyNotFoundError(OntologyError):
     """No named entity matches the requested identifier or exact term."""
-
-
-class OntologyAmbiguityError(OntologyError):
-    """An exact label or alias denotes multiple entities.
-
-    ``resolution`` carries serializable candidate information for a workflow or
-    an eventual tool adapter to return to the caller.
-    """
-
-    def __init__(self, resolution: OntologyResolution) -> None:
-        self.resolution = resolution
-        super().__init__(
-            f"{resolution.query!r} matches {resolution.total_matches} ontology entities"
-        )

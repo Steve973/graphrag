@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
   "boto3==1.43.108",
   "fastapi==0.142.2",
+  "fsspec[http]==2026.6.0",
   "langchain-aws==1.8.0",
   "httpx==0.28.1",
   "langchain-core==1.6.6",
@@ -19,6 +20,7 @@ dependencies = [
   "pymongo==4.17.0",
   "ragas==0.4.3",
   "rdflib==7.6.0",
+  "linkml-runtime==1.12.0",
   "uvicorn[standard]==0.54.0",
 ]
 

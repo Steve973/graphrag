@@ -1,0 +1,104 @@
+{
+  "mappings": [
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#Incident",
+      "schema_elements": [
+        {
+          "schema_class": "Event"
+        }
+      ],
+      "relation": "close",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Incident-to-Event alignment proposed for testing; not published by either author."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#Attack",
+      "schema_elements": [
+        {
+          "schema_class": "AttackType"
+        }
+      ],
+      "relation": "close",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Attack is used in the ontology attack-type hierarchy; category alignment requires review."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#Weapon",
+      "schema_elements": [
+        {
+          "schema_class": "Weapon"
+        }
+      ],
+      "relation": "close",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Both models organize weapon categories; exact coverage requires review."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#PerpetratorGroup",
+      "schema_elements": [
+        {
+          "schema_class": "Group"
+        }
+      ],
+      "relation": "close",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Proposed perpetrator-group representation."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#hasAttackType",
+      "schema_elements": [
+        {
+          "schema_class": "Event",
+          "schema_slot": "is_of_attacktype_attacktype"
+        }
+      ],
+      "relation": "related",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "The ontology range uses a skolemized OWL expression; do not assume direct equivalence."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#hasTarget",
+      "schema_elements": [
+        {
+          "schema_class": "Event",
+          "schema_slot": "targets_target"
+        }
+      ],
+      "relation": "related",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Ontology target categorization and graph named targets differ; this is a provisional association."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#usedWeapon",
+      "schema_elements": [
+        {
+          "schema_class": "Event",
+          "schema_slot": "used_weapon_weapon"
+        }
+      ],
+      "relation": "related",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Provisional property-to-edge alignment."
+    },
+    {
+      "ontology_uri": "http://www.semanticweb.org/user/ontologies/2020/3/GTDB#hasPerpGroup",
+      "schema_elements": [
+        {
+          "schema_class": "Group",
+          "schema_slot": "carries_out_event"
+        }
+      ],
+      "relation": "related",
+      "status": "proposed",
+      "provenance": "Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12",
+      "note": "Graph edge points Group to Event, opposite the ontology Incident-to-group property."
+    }
+  ]
+}

@@ -1,201 +1,196 @@
-# Ontology service
+# Ontology meaning and graph schema tools
 
-`OntologyService` reads a configured native OWL/RDF file into an RDFLib 7.6.0
-`Graph`. It adds exact term resolution, bounded context and question snapshots.
-It does not project OWL restrictions into named edges, infer triples, or map
-ontology concepts to database labels/properties.
+The service helps an agent understand what a concept means and how the graph
+represents it. It can be used alongside graph query tools in a GraphRAG workflow
+or a LangChain research agent.
 
-## Configuration and question lifetime
+The callable service API uses `resolve(term)` to return resolved, ambiguous or
+missing results, `get_entity(identifier)` to look up a known identifier, and
+`describe([term, ...])` to combine ontology meaning with database schema mappings.
+Use `neighborhood(identifiers, direction=..., predicates=..., limits=...)` for
+traversal. Named research-agent tools can call this method with fixed options:
+ancestors follow outgoing `rdfs:subClassOf` statements, descendants follow incoming
+ones, and immediate relationships use `OntologyContextLimits(max_depth=1)`.
+
+## Agent tools
+
+With a schema configured, `create_ontology_tools(service)` returns six tools:
+
+| Tool | Use |
+| --- | --- |
+| `ontology_search(query, limit=10, exact=False)` | Find concepts by label, synonym, IRI or CURIE. |
+| `ontology_context(terms, direction="both", predicates=None, max_depth=2, max_entities=30, max_relationships=60)` | Get definitions, selected ontology statements and corresponding graph schema bindings together. |
+| `ontology_relationships(term, direction="both", predicates=None)` | Inspect immediate statements, such as a property's domain and range, together with schema mappings. |
+| `ontology_ancestors(term, max_depth=4)` | Inspect stated superclasses and their schema mappings. |
+| `ontology_descendants(term, max_depth=4)` | Inspect stated subclasses and their schema mappings. |
+| `ontology_database_element(element_name, property_name=None, relationship_type=None)` | Start from a graph entity, property or relationship and find its ontology meaning. |
+
+The context tool takes a list of names or identifiers. It returns one consistent
+payload containing `ontology`, `mappings`, `schema_sources`,
+`unmapped_ontology_uris` and `warnings`. Each mapping identifies the ontology
+concept and its database elements. Graph bindings include entity labels,
+properties, relationship types, endpoints and directions; native LinkML
+class/slot definitions carry schema details such as ranges and descriptions.
+The three named traversal tools return this same payload. They select traversal
+options in the tool handlers without adding convenience methods to the service.
+
+Use the default context for an initial meaning/schema lookup. For a focused
+follow-up, select direction or predicate identifiers, or use a named traversal
+tool. When the response reports truncation, increase the relevant depth or
+resource/statement limit, or narrow the terms and predicates. `max_depth=0`
+returns the selected concepts and mappings without following relationships.
+Ancestor and descendant tools follow original `rdfs:subClassOf` statements;
+they do not compute OWL entailment or prove how database records are classified.
+Anonymous restrictions can require a deeper, unfiltered context request.
+
+For example, an agent can search for “Incident”, request context for the selected
+IRI, learn that it is represented by an `Event` node, and inspect the mapped
+properties and relationships before constructing a graph query. Starting from
+`Event.year`, the reverse tool supplies its explicitly mapped ontology meaning.
+
+Ambiguous names return candidates. The agent selects an identifier and calls
+again. Unknown names and absent mappings stay explicit. Proposed or asserted
+mappings are marked as unverified. A mapping establishes an explicit association;
+it does not by itself prove OWL equivalence or validate database contents.
+
+Without a schema, search, context and the named traversal tools remain available,
+and context reports that
+no database schema mappings are configured. Add `include_sparql=True` when the
+agent needs an additional tool for precise SELECT, ASK, CONSTRUCT or DESCRIBE questions
+against the ontology. SPARQL is optional in the default tool set.
+These tools consult the loaded ontology and schema mappings; they do not query
+database records.
+
+## Loading and registration
 
 ```python
+from pathlib import Path
+
 from graphrag.config.ontology_config import OntologySettings
-from graphrag.service.ontology_service import OntologyService
+from graphrag.service.ontology_service import OntologyService, create_ontology_tools
 
-reader = OntologyService(OntologySettings(path="/ontologies/fl.owl"))
-reader.initialize()  # Optional startup validation; otherwise loading is lazy.
+ontology = OntologyService(OntologySettings(
+    path=Path("ontology.ttl"),
+    schema_path=Path("schema.linkml.yaml"),
+))
+ontology.initialize()  # During application startup.
+ontology_tools = create_ontology_tools(ontology)
 
-# Once, at the beginning of a NEW question:
-reader = reader.for_question()
-question_ontology = reader
-
-# Retain question_ontology for all stages and any continuation of that question.
+# Register these alongside the agent's graph/research tools.
+# model.bind_tools(ontology_tools) exposes their schemas to a LangChain model.
+# Execute returned calls with the same tool objects, or a LangGraph ToolNode.
+tools_by_name = {tool.name: tool for tool in ontology_tools}
+payload = tools_by_name["ontology_context"].invoke({"terms": ["Incident"]})
+superclasses = tools_by_name["ontology_ancestors"].invoke({"term": "Incident"})
+# payload = await tools_by_name["ontology_context"].ainvoke({"terms": ["Incident"]})
 ```
 
-The existing data profile accepts `ontology=OntologySettings(...)`, and
-`OntologyService.from_profile(profile)` uses it. For environment configuration:
+This factory provides standard LangChain `StructuredTool` objects; it does not
+create an agent or automatically register them with an existing workflow.
+`ainvoke` runs synchronous handlers in a worker thread. Validation and lookup
+errors become tool observations that the agent can respond to.
 
-```text
-GRAPH_RAG_DATA_PROFILE__ONTOLOGY__PATH=/ontologies/fl.owl
-GRAPH_RAG_DATA_PROFILE__ONTOLOGY__FORMAT=xml
-```
+Initialization loads the ontology snapshot and the optional LinkML schema once.
+LinkML resolves schema imports and inherited class/slot definitions. The adapter
+extracts explicit ontology alignments and physical bindings, then prepares two
+indexes: ontology URI to mapping records, and database address to mapping records.
+Requests use these indexes. They never reparse or scan the database schema.
+Only ontology context and the selected response are assembled at request time.
+Resource changes require a new service instance/application restart.
 
-RDFLib's `guess_format` selects the parser from the suffix (`.owl` means
-RDF/XML); `format` can explicitly select an installed RDFLib parser. OWL/XML,
-Functional Syntax and Manchester Syntax need an RDF/XML or Turtle export.
-Only imports reachable through configured `imports={import_iri: local_path}`
-are loaded. Unmapped imports warn, or fail with `unresolved_imports="error"`.
-Root/import SHA-256 hashes identify the loaded bytes. At a new question boundary,
-resolved path, inode, size and mtime decide whether to create a new snapshot.
-An active instance never reloads. Changes preserving all those stat fields
-require explicit new construction. Retain/cache the returned instance yourself.
+## Schema bindings
 
-## Useful calls for workflow stages
+Use LinkML `class_uri`, `slot_uri`, `exact_mappings`, `close_mappings`,
+`related_mappings`, `broad_mappings`, `narrow_mappings` or `mappings` for explicit
+ontology associations. Generated default schema URIs do not assert an alignment.
+Reused class-local slot names remain distinct.
 
-```python
-from graphrag.model.ontology import OntologyContextLimits
+Physical graph bindings are annotations:
 
-# Investigate terms found in a question or retrieved data.
-hits = question_ontology.search("organization", limit=10)
-resolution = question_ontology.resolve("Institution")
+- Classes: `graph_label`.
+- Property slots: `graph_property`.
+- Relationship slots: `graph_relationship`, `graph_direction` (`incoming` or
+  `outgoing`), `graph_source_label`, and `graph_target_label`.
+- Optional schema annotation: `database_backend`.
+- Optional mapping metadata: `mapping_status`, `mapping_provenance`,
+  `mapping_note`, and `mapping_confidence`.
 
-# Prompt-ready context for planning, query construction or interpretation.
-context = question_ontology.get_context(
-    ["Organization", "Person"],
-    limits=OntologyContextLimits(max_depth=2, max_entities=30, max_relationships=60),
-)
-context_payload = context.model_dump(mode="json")
-context_text = context.to_structured_text()
+The adapter also accepts the `neo4j_` spellings used by the supplied GTD schema.
+Conflicting bindings or inconsistent relationship endpoints fail loading.
+Multiple concepts or schema elements may share mappings; both indexes preserve
+all explicit associations.
 
-# Focused follow-up access, using identifiers returned by resolution/search.
-entity = question_ontology.resolve_entity("Organization")
-parents = question_ontology.ancestors(entity.identifier)
-children = question_ontology.descendants(entity.identifier)
-relationships = question_ontology.relationships(entity.identifier)
-```
+## Library and service responsibilities
 
-`search` matches literal substrings in full IRIs, the selected label and aliases,
-with exact matches first. `resolve` prefers an exact IRI/bound CURIE, then exact
-case-insensitive labels/aliases; ambiguity and missing terms remain explicit.
-`resolve_entity` raises a domain exception unless there is one unique match.
-Named subjects are searchable. Referenced IRIs can also be fetched directly;
-reading one does not silently add it to the search population.
+RDFLib handles RDF parsing, namespace expansion, triple retrieval, SPARQL search,
+query evaluation and serialization. Search uses native `LCASE`/`CONTAINS` over
+all configured labels and synonyms, with exact matches first. Preferred language
+and predicate order choose the display label and definition, not search scope.
 
-Returned identifiers are full IRIs. RDFLib's namespace manager expands input
-CURIEs; `prefixes` can add or override bindings. RDFLib may replace a previous
-prefix for the same namespace, so prefer full IRIs for stable identifiers or
-explicit `PREFIX` declarations in queries.
+The service assembles meaning plus graph mappings, reports ambiguity, and limits
+context size for the agent. The default context follows both directions for two
+hops, with at most 30 resources and 60 triples. Original blank-node OWL
+restrictions and literal values remain visible; no invented class-to-class edges
+or OWL inference are added. Truncation is reported. Application callers can use
+`describe(..., limits=..., direction=..., predicates=...)` for more control;
+the agent context tool exposes direction, predicates and traversal budgets while
+retaining the default metadata text limits.
 
-Labels, definitions and aliases come from **configured annotation predicates**,
-not from guessed ontology semantics. Defaults are `rdfs:label`/`skos:prefLabel`,
-`IAO:0000115`/`skos:definition`, and `skos:altLabel`/`oboInOwl:hasExactSynonym`.
-Confirm these against the FL file, and override them when needed. Broad, narrow
-and related synonyms are not exact-resolution defaults. Predicate priority
-precedes preferred-language selection (`language="en"` by default); fallback is
-untagged text, then other languages in deterministic order. Entity `types`
-contains original named `rdf:type` values, including individual classifications.
+`OntologyProvider` supplies initialization, entity lookup, search, resolution,
+bounded neighborhood retrieval and SPARQL. The RDFLib provider reads resources
+through `OntologyResources` and the shared fsspec `ResourceLoader`. Ontology
+imports use explicitly configured locations; unavailable imports warn or fail
+according to `unresolved_imports`. A native provider can supply the same primitives
+without exporting RDF. `MobiOntologyProvider` currently implements committed
+entity reads and identifier resolution; the remaining operations are deferred.
 
-Context defaults to two outgoing hops. It returns original triples, including
-annotations, literal values and anonymous OWL expressions. For example, an
-existential restriction remains `class -> rdfs:subClassOf -> blank node`, with
-`owl:onProperty` and `owl:someValuesFrom` on that node. It is not an asserted
-class-to-class edge. Blank-node IDs are local to a loaded snapshot.
+LinkML is a load-time adapter, not a request-time provider. `SchemaMappings` is
+plain prepared data. The service can also accept an injected ontology provider
+and prepared mappings from another database-schema adapter.
 
-Limits bound traversal depth, named/anonymous resource count, triple count,
-candidates and metadata/literal text lengths. Literals are terminal values;
-`entities` contains metadata for named nodes only. Responses report truncation.
-Predicate filters apply at every hop; to read details of a restriction, use an
-unfiltered context or a targeted SPARQL query. Hierarchy helpers default to
-`rdfs:subClassOf` and four hops; these are bounded traversal, not OWL reasoning.
+SPARQL queries are confined to the loaded snapshot: updates, `FROM` and `SERVICE`
+are excluded. Output limits bound returned context/rows/triples, not parsing or
+query execution cost. See [the library audit](ontology_library_audit.md) for the
+remaining custom operations and why they belong in this application.
 
-## SPARQL for precise follow-up questions
+## Initial native Mobi support
 
-```python
-result = question_ontology.query_sparql("""
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-SELECT ?class ?restriction ?property ?filler WHERE {
-  ?class <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?restriction .
-  ?restriction owl:onProperty ?property ; owl:someValuesFrom ?filler .
-}
-ORDER BY ?class ?property ?filler
-LIMIT 20
-""", limit=20)
-result_payload = result.model_dump(mode="json")
-```
+`MobiOntologyProvider` reads entity statements using the ontology REST API and
+converts expanded JSON-LD directly into our entity model. It does not load an
+ontology export or use RDFLib. It supports full IRIs, explicitly configured
+CURIEs, annotation predicates, preferred-language selection, and resolution of
+known identifiers. Labels/aliases are not yet resolved remotely.
 
-Native SELECT, ASK, CONSTRUCT and DESCRIBE are supported. `data` is RDFLib's
-standard SPARQL JSON for SELECT/ASK (including RDF term kinds, language and
-datatype), or Turtle for graph results. The wrapper supplies source provenance,
-query type and truncation. Graph results truncated by the triple bound may
-contain incomplete expressions; request more context before interpreting them.
-Use `ORDER BY` when SELECT row order matters. Namespace bindings from the loaded
-graph are available, or supply explicit `PREFIX` declarations.
+Supply the REST base URL (typically `https://host/mobirest`), ontology record IRI,
+production branch IRI, and a specific committed revision IRI. Initialization
+freezes this supplied scope; it does not connect to the server or discover the
+latest production version. Server access is checked on the first entity read.
+All implemented requests are GETs and explicitly set
+`applyInProgressCommit=false`. Moving selectors such as `head` are rejected.
+Authentication can be provided through a caller-owned, authenticated
+`httpx.Client`; login and deployment-specific authentication remain deferred.
+The provider's `close()` releases only an HTTP client it created itself.
 
-The query operation targets the configured snapshot. FROM and SERVICE are
-excluded because RDFLib can load/query additional local or remote sources
-through them; these are RDFLib capabilities, not missing features. Updates are
-not exposed. Invalid queries raise `OntologyQueryError`; load failures raise
-`OntologyLoadError`, and unsupported external-source queries raise
-`OntologyUnsupportedError`. Underlying exceptions remain chained.
+Imports are excluded by default while production import-version selection is
+unimplemented. `include_imports=True` explicitly opts into Mobi's import resolution
+and returns a warning that import revisions and failures are unverified. Strict
+import validation is unsupported. The failed-imports endpoint is deliberately
+not used because the reviewed implementation applies in-progress edits internally.
 
-Output limits do not impose parsing/query execution time or memory budgets.
-SPARQL values are not text-truncated. SELECT bindings and graph results may be
-materialized before output limiting. Run synchronous service calls in a worker
-thread in an async application; use a separately controlled worker process if a
-hard execution budget is required. Choose parser formats deliberately: plugins
-such as JSON-LD may resolve external resources while parsing.
+| Implemented | Deferred until deployment/API verification |
+| --- | --- |
+| Entity metadata retrieval and identifier resolution | Exact label/alias search and resolution |
+| Explicit branch/commit scope and read-only HTTP requests | Authentication/login and automatic production-version selection |
+| Expanded JSON-LD conversion and domain errors | Bounded neighborhood traversal, blank-node identity across requests, and SPARQL validation/execution |
 
-## LangChain agent tools
+Deferred methods raise `OntologyUnsupportedError` without sending requests.
+Consequently this provider is not yet a complete backend for the agent tools:
+search, combined context, and traversal tools need the deferred methods.
+HTTP authentication, authorization, missing-resource, redirect and server errors
+are reported as query errors rather than silently interpreted as absent concepts.
+Server version metadata is caller-supplied or reported as `unknown`.
 
-`create_ontology_tools` in the service module returns three standard LangChain
-`StructuredTool` objects: `ontology_search`, `ontology_context`, and
-`ontology_sparql`. Supply that list to a plain agent or research agent's tool
-collection, alongside its other tools. The factory uses the existing
-`langchain-core` dependency; it has no LiteLLM adapter.
-
-```python
-from graphrag.service.ontology_service import create_ontology_tools
-
-# Once, at the beginning of a new question:
-reader = reader.for_question()
-ontology_tools = create_ontology_tools(reader)
-
-# Add ontology_tools to your LangChain agent's tools argument.
-# Its existing model and agent configuration remain under caller control.
-
-# Direct calls also work:
-context_tool = next(tool for tool in ontology_tools if tool.name == "ontology_context")
-context_payload = context_tool.invoke({"terms": ["Organization", "Person"]})
-
-# In an async application:
-# context_payload = await context_tool.ainvoke({"terms": ["Organization"]})
-```
-
-Tools capture the supplied instance and never call `for_question` themselves.
-Retain them throughout the question, including continuations. Build new tools
-with the newly selected snapshot for the next question. LangChain's native
-async invocation runs the synchronous handlers in an executor thread.
-
-Input schemas carry term/row bounds, directions, predicate filters and the
-existing context limits. Successful calls return the service's JSON-compatible
-payload unchanged, preserving ambiguity, provenance and truncation. Start with
-search or context; use SPARQL for precise follow-up questions. Missing and
-ambiguous terms are successful observations with explicit resolution statuses,
-not invented matches. Validation failures and ontology exceptions become
-LangChain error observations, allowing the agent to revise its arguments.
-Agent-style calls return `ToolMessage` objects with success/error status;
-direct `invoke` returns a dictionary on success and an error string on failure.
-
-The factory is verified against installed `langchain-core==1.4.9` and its
-`StructuredTool.from_function` API; see the
-[official StructuredTool reference](https://reference.langchain.com/python/langchain-core/tools/structured/StructuredTool).
-
-The repository's own workflow executes tools through `GraphProvider` and its
-`AvailableTool` catalog. To use these tools there, advertise their names,
-descriptions and schemas in that catalog and route requests to the question's
-retained tool collection, then retain results for the relevant stage prompts.
-The factory does not change that workflow dispatch. A resumed workflow must use
-the same snapshot; process-restart persistence of snapshots is not implemented.
-Database-to-ontology mappings remain a separate input when constructing queries
-against the actual data store.
-
-No extra RDFLib ecosystem dependency is needed for these operations. Core graph,
-namespace, parser and serializer APIs replace the custom wrapper. `infixowl` is
-an OWL editing convenience; its constructors/accessors can modify graphs.
-pyLODE generates documentation, Prez provides a separate linked-data API, and
-OWL-RL/pySHACL address inference/validation. None reduces this local access
-service enough to justify another dependency at this stage.
-
-API verification used the installed 7.6.0 package source and the
-[official graph API](https://rdflib.readthedocs.io/en/7.6.0/apidocs/rdflib.graph/),
-[namespace API](https://rdflib.readthedocs.io/en/7.6.0/apidocs/rdflib.namespace/)
-and [RDFLib ecosystem repositories](https://github.com/orgs/RDFLib/repositories?type=all).
+Endpoint behavior was reviewed against the
+[Mobi ontology API source](https://github.com/inovexcorp/mobi/blob/master/com.mobi.ontology.rest/src/main/java/com/mobi/ontology/rest/OntologyRest.java).
+Mock-HTTP tests verify the local implementation; a live deployment has not yet
+been tested.

@@ -1,435 +1,178 @@
-"""Deterministic ontology grounding from a native RDF graph.
-
-The source files remain canonical. RDFLib supplies storage, namespace handling
-and query evaluation; this service adds resolution and bounded context. Output
-limits do not bound parsing or query execution cost. Run synchronous calls in an async worker thread.
-"""
+"""Provider-based ontology queries and database-independent schema grounding."""
 
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Sequence
-from hashlib import sha256
-from importlib.metadata import version
-from pathlib import Path
-from threading import RLock
-from typing import TYPE_CHECKING, Annotated, Any, TypeVar, cast
-from xml.etree.ElementTree import fromstring
+from functools import cached_property
+from typing import TYPE_CHECKING, Annotated, Any
 
 from langchain_core.tools import StructuredTool, ToolException
 from pydantic import Field
-from rdflib import BNode, Graph, Literal, OWL, RDF, URIRef
-from rdflib.plugins.sparql import prepareQuery
-from rdflib.plugins.sparql.parserutils import CompValue
-from rdflib.term import Identifier
-from rdflib.util import guess_format
 
-from graphrag.config.ontology_config import OntologySettings
+from graphrag.config.ontology_config import OntologyReaderSettings, OntologySettings
 from graphrag.model.base import ContractModel, NonEmptyStr
 from graphrag.model.ontology import (
-    OntologyAmbiguityError,
     OntologyContext,
     OntologyContextLimits,
     OntologyDirection,
     OntologyEntity,
     OntologyError,
-    OntologyFileSource,
     OntologyLoadError,
     OntologyNeighborhood,
-    OntologyNotFoundError,
-    OntologyQueryError,
-    OntologyQueryType,
-    OntologyRelationship,
     OntologyResolution,
     OntologySearchResult,
     OntologySource,
     OntologySparqlResult,
-    OntologyUnsupportedError,
 )
+from graphrag.model.ontology_mapping import (
+    OntologyDatabaseContext,
+    OntologySchemaMapping,
+    SchemaMappings,
+)
+from graphrag.ontology.base_providers import OntologyProvider
+from graphrag.ontology.rdflib_provider import RDFLibOntologyProvider
+from graphrag.ontology.resources import OntologyResources
 
 if TYPE_CHECKING:
     from graphrag.config.graph_rag_config import GraphDataProfile
 
-T = TypeVar("T")
-_IS_A = "http://www.w3.org/2000/01/rdf-schema#subClassOf"
-_MAX_TERMS = 20
-_Resource = URIRef | BNode
-_Triple = tuple[_Resource, URIRef, Identifier]
-
-
 class OntologyService:
-    """Reuse one read-only ontology snapshot for lookup and bounded context.
+    """Combine ontology queries with mappings indexed during initialization.
 
-    Construction is lazy; call ``initialize()`` during startup to fail early.
-    Call ``for_question()`` at the beginning of a new question and retain its
-    returned service throughout that workflow. Changed files create a new
-    service; an initialized instance is never reloaded. Graph access is serialized
-    to protect metadata caches and RDFLib query evaluation.
+    Remote implementations can instead be injected with provider= and paired
+    with plain SchemaMappings data. Call initialize() during startup to load
+    profile resources once.
     """
 
-    def __init__(self, settings: OntologySettings) -> None:
-        self._settings = settings.model_copy(deep=True)
-        self._lock = RLock()
-        self._graph = Graph()
-        self._files: dict[Path, tuple[str, int, int, int]] = {}
-        self._source: OntologySource | None = None
-        self._entities: dict[str, OntologyEntity] = {}
+    def __init__(
+        self,
+        settings: OntologySettings | None = None,
+        *,
+        provider: OntologyProvider | None = None,
+        schema_mappings: SchemaMappings | None = None,
+    ) -> None:
+        if (settings is None) == (provider is None):
+            raise ValueError("Supply exactly one of settings or provider")
+        if provider is not None and not isinstance(provider, OntologyProvider):
+            raise TypeError("provider must extend OntologyProvider")
+        if schema_mappings is not None and not isinstance(
+            schema_mappings, SchemaMappings
+        ):
+            raise TypeError("schema_mappings must be SchemaMappings data")
+        self._schema_path = None
+        if settings is not None:
+            reader_settings = OntologyReaderSettings.model_validate(
+                {
+                    name: getattr(settings, name)
+                    for name in OntologyReaderSettings.model_fields
+                }
+            )
+            provider = RDFLibOntologyProvider(
+                OntologyResources(
+                    str(settings.path),
+                    format=settings.format,
+                    imports={iri: str(path) for iri, path in settings.imports.items()},
+                ),
+                reader_settings,
+            )
+            if settings.schema_path is not None:
+                if schema_mappings is not None:
+                    raise ValueError("Supply schema_path or schema_mappings, not both")
+                self._schema_path = settings.schema_path
+        assert provider is not None
+        self.provider = provider
+        self._supplied_mappings = schema_mappings
+
+    @cached_property
+    def _mapping_data(self) -> SchemaMappings | None:
+        if self._schema_path is not None:
+            from graphrag.ontology.linkml_loader import load_linkml_mappings
+
+            return load_linkml_mappings(self._schema_path)
+        return self._supplied_mappings
 
     @classmethod
-    def from_profile(cls, profile: GraphDataProfile) -> OntologyService:
-        """Create the service from the dataset's configured ontology."""
-
+    def from_profile(
+        cls,
+        profile: GraphDataProfile,
+    ) -> OntologyService:
         if profile.ontology is None:
             raise OntologyLoadError(
                 f"Profile {profile.id!r} has no ontology configured"
             )
         return cls(profile.ontology)
 
-    @staticmethod
-    def _signature(path: Path) -> tuple[str, int, int, int]:
-        resolved = path.expanduser().resolve(strict=True)
-        stat = resolved.stat()
-        return str(resolved), stat.st_ino, stat.st_size, stat.st_mtime_ns
-
     def initialize(self) -> OntologySource:
-        """Load a native graph atomically, with explicitly mapped local imports."""
+        source = self.provider.initialize()
+        _ = self._mapping_data
+        return source
 
-        with self._lock:
-            if self._source is not None:
-                return self._source
-            try:
-                graph = Graph()
-                files: dict[Path, tuple[str, int, int, int]] = {}
-                sources: list[OntologyFileSource] = []
-                warnings: set[str] = set()
-                pending = [(self._settings.path, self._settings.format)]
-                while pending:
-                    requested, explicit_format = pending.pop(0)
-                    signature = self._signature(requested)
-                    if signature[0] in {item.path for item in sources}:
-                        continue
-                    path = Path(signature[0])
-                    contents = path.read_bytes()
-                    format_name = explicit_format or guess_format(path.name)
-                    if format_name is None:
-                        raise OntologyUnsupportedError(
-                            "Specify an RDF parser format or export to RDF/XML or Turtle"
-                        )
-                    if (
-                        format_name in {"xml", "application/rdf+xml"}
-                        and fromstring(contents).tag
-                        == "{http://www.w3.org/2002/07/owl#}Ontology"
-                    ):
-                        raise OntologyUnsupportedError(
-                            "OWL/XML requires an RDF/XML or Turtle export"
-                        )
-                    document = Graph().parse(
-                        data=contents, publicID=path.as_uri(), format=format_name
-                    )
-                    files[requested] = signature
-                    sources.append(
-                        OntologyFileSource(
-                            path=str(path), sha256=sha256(contents).hexdigest()
-                        )
-                    )
-                    graph += document
-                    for prefix, namespace in document.namespaces():
-                        graph.bind(prefix, namespace, override=False)
-                    for imported in sorted(
-                        set(map(str, document.objects(None, OWL.imports)))
-                    ):
-                        if imported in self._settings.imports:
-                            pending.append((self._settings.imports[imported], None))
-                        else:
-                            warning = f"Ontology import was not loaded: {imported}"
-                            if self._settings.unresolved_imports == "error":
-                                raise ValueError(warning)
-                            warnings.add(warning)
-                if any(
-                    self._signature(checked_path) != expected_signature
-                    for checked_path, expected_signature in files.items()
-                ):
-                    raise ValueError(
-                        "Ontology files changed while loading; retry initialization"
-                    )
-                for prefix, namespace in self._settings.prefixes.items():
-                    graph.bind(prefix, URIRef(namespace), replace=True)
-                root, *imports = sources
-                source = OntologySource(
-                    path=root.path,
-                    sha256=root.sha256,
-                    library="rdflib",
-                    library_version=version("rdflib"),
-                    imported_files=tuple(imports),
-                    warnings=tuple(sorted(warnings)),
-                )
-                # Only named subjects are searchable; referenced resources remain
-                # accessible by identifier and through neighborhood traversal.
-                entities = {
-                    str(subject): self._read_entity(graph, subject)
-                    for subject in sorted(set(graph.subjects()), key=str)
-                    if isinstance(subject, URIRef)
-                }
-            except Exception as exc:
-                raise OntologyLoadError(
-                    f"Cannot load ontology from {self._settings.path}: {exc}"
-                ) from exc
-            self._graph, self._files, self._entities, self._source = (
-                graph,
-                files,
-                entities,
-                source,
-            )
-            return source
-
-    def for_question(self) -> OntologyService:
-        """Check file stats only at a new question boundary; retain old snapshots.
-
-        Keep the returned instance throughout that question. A changed root or
-        import creates a new instance. SHA-256 identifies the loaded bytes;
-        changes preserving all stat fields require explicit new construction.
-        """
-
-        with self._lock:
-            self.initialize()
-            try:
-                if all(
-                    self._signature(path) == signature
-                    for path, signature in self._files.items()
-                ):
-                    return self
-            except OSError as exc:
-                raise OntologyLoadError(f"Cannot check ontology files: {exc}") from exc
-            refreshed = type(self)(self._settings)
-            refreshed.initialize()
-            return refreshed
-
-    @staticmethod
-    def _call(operation: str, function: Callable[[], T]) -> T:
-        try:
-            return function()
-        except OntologyQueryError:
-            raise
-        except NotImplementedError as exc:
-            raise OntologyUnsupportedError(f"Cannot {operation}") from exc
-        except Exception as exc:
-            raise OntologyQueryError(f"Failed to {operation}: {exc}") from exc
-
-    @staticmethod
-    def _iri(graph: Graph, value: str) -> URIRef:
-        try:
-            return graph.namespace_manager.expand_curie(value)
-        except ValueError:
-            return URIRef(value)
-
-    def _read_entity(self, graph: Graph, subject: URIRef) -> OntologyEntity:
-        def literals(predicates: Sequence[str]) -> list[str]:
-            values: list[str] = []
-            for predicate in predicates:
-                annotations = (
-                    value
-                    for value in graph.objects(subject, self._iri(graph, predicate))
-                    if isinstance(value, Literal)
-                )
-                values.extend(
-                    str(annotation)
-                    for annotation in sorted(
-                        annotations,
-                        key=lambda literal: (
-                            (
-                                0
-                                if literal.language == self._settings.language
-                                else 1 if not literal.language else 2
-                            ),
-                            str(literal),
-                            literal.language or "",
-                            str(literal.datatype or ""),
-                        ),
-                    )
-                )
-            return list(dict.fromkeys(values))
-
-        labels = literals(self._settings.label_predicates)
-        definitions = literals(self._settings.definition_predicates)
-        return OntologyEntity(
-            identifier=str(subject),
-            label=next(iter(labels), None),
-            definition=next(iter(definitions), None),
-            aliases=tuple(
-                value
-                for value in literals(self._settings.alias_predicates)
-                if value not in labels
-            ),
-            types=tuple(
-                sorted(
-                    str(value)
-                    for value in graph.objects(subject, RDF.type)
-                    if isinstance(value, URIRef)
-                )
-            ),
-        )
-
-    def _entity(self, identifier: str) -> OntologyEntity:
-        if identifier not in self._entities:
-            return self._call(
-                "read entity metadata",
-                lambda: self._read_entity(self._graph, URIRef(identifier)),
-            )
-        return self._entities[identifier]
-
-    @staticmethod
-    def _query(value: str) -> str:
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("Ontology query must be a nonempty string")
-        return value.strip()
-
-    @staticmethod
-    def _limit(value: int) -> None:
-        if type(value) is not int or not 1 <= value <= 200:
-            raise ValueError("limit must be an integer between 1 and 200")
-
-    def _identifier(self, query: str) -> str | None:
-        node = self._iri(self._graph, query)
-        if (
-            (node, None, None) in self._graph
-            or (None, None, node) in self._graph
-            or (None, node, None) in self._graph
-        ):
-            return str(node)
-        return None
-
-    def get_entity(self, identifier: str) -> OntologyEntity:
-        """Perform a lookup of an IRI or bound CURIE; unknown IDs raise explicitly."""
-
-        query = self._query(identifier)
-        with self._lock:
-            self.initialize()
-            entity_id = self._identifier(query)
-            if entity_id is None:
-                raise OntologyNotFoundError(
-                    f"No ontology entity with identifier {query!r}"
-                )
-            return self._entity(entity_id)
+    def get_entity(
+        self,
+        identifier: str,
+    ) -> OntologyEntity:
+        return self.provider.get_entity(identifier)
 
     def search(
-        self, query: str, *, limit: int = 20, exact: bool = False
-    ) -> OntologySearchResult:
-        """Search IDs, labels, and aliases literally; exact matches rank first.
-
-        Matching is case-insensitive, except that canonical ID lookup retains the
-        case. No wildcard, regex, fuzzy matching, or model inference is used.
-        Deprecated entities are retained so historical data can be interpreted.
-        """
-
-        query = self._query(query)
-        self._limit(limit)
-        folded = query.casefold()
-        with self._lock:
-            self.initialize()
-            requested_id = self._identifier(query)
-            matches: list[tuple[int, str]] = []
-            for identifier, entity in self._entities.items():
-                values = [
-                    identifier.casefold(),
-                    *(alias.casefold() for alias in entity.aliases),
-                ]
-                if entity.label is not None:
-                    values.append(entity.label.casefold())
-                if identifier == requested_id:
-                    rank = 0
-                elif folded in values:
-                    rank = 1
-                elif not exact and any(folded in value for value in values):
-                    rank = 2
-                else:
-                    continue
-                matches.append((rank, identifier))
-            matches.sort()
-            return OntologySearchResult(
-                query=query,
-                entities=tuple(
-                    self._entity(matched_id) for _, matched_id in matches[:limit]
-                ),
-                total_matches=len(matches),
-                truncated=len(matches) > limit,
-            )
-
-    def resolve(self, term: str, *, limit: int = 10) -> OntologyResolution:
-        """Prefer IRIs or bound CURIEs, otherwise retain every exact label/alias match."""
-
-        query = self._query(term)
-        self._limit(limit)
-        with self._lock:
-            self.initialize()
-            identifier = self._identifier(query)
-            if identifier is not None:
-                return OntologyResolution(
-                    query=query,
-                    status="resolved",
-                    candidates=(self._entity(identifier),),
-                    total_matches=1,
-                )
-            folded = query.casefold()
-            identifiers = [
-                matched_id
-                for matched_id, entity in self._entities.items()
-                if (entity.label is not None and entity.label.casefold() == folded)
-                or any(alias.casefold() == folded for alias in entity.aliases)
-            ]
-            total = len(identifiers)
-            return OntologyResolution(
-                query=query,
-                status=(
-                    "not_found"
-                    if not total
-                    else "resolved" if total == 1 else "ambiguous"
-                ),
-                candidates=tuple(
-                    self._entity(candidate_id) for candidate_id in identifiers[:limit]
-                ),
-                total_matches=total,
-                truncated=total > limit,
-            )
-
-    def resolve_entity(self, term: str) -> OntologyEntity:
-        """Require a unique resolution for deterministic workflow operations."""
-
-        result = self.resolve(term)
-        if result.status == "not_found":
-            raise OntologyNotFoundError(f"No exact ontology match for {result.query!r}")
-        if result.status == "ambiguous":
-            raise OntologyAmbiguityError(result)
-        return result.candidates[0]
-
-    def _edges(
         self,
-        nodes: Sequence[_Resource],
-        direction: OntologyDirection,
-        predicates: tuple[URIRef, ...] | None,
-    ) -> list[_Triple]:
-        edges: set[_Triple] = set()
-        for node in nodes:
-            for predicate in (None,) if predicates is None else predicates:
-                selectors = []
-                if direction in {"outgoing", "both"}:
-                    selectors.append((node, predicate, None))
-                if direction in {"incoming", "both"}:
-                    selectors.append((None, predicate, node))
-                for selector in selectors:
-                    for subject, relation, value in self._graph.triples(selector):
-                        if (
-                            isinstance(subject, (URIRef, BNode))
-                            and isinstance(relation, URIRef)
-                            and isinstance(value, Identifier)
-                        ):
-                            edges.add((subject, relation, value))
-        return sorted(edges, key=lambda edge: tuple(term.n3() for term in edge))
+        query: str,
+        *,
+        limit: int = 20,
+        exact: bool = False,
+    ) -> OntologySearchResult:
+        return self.provider.search(query, limit=limit, exact=exact)
+
+    def resolve(
+        self,
+        term: str,
+        *,
+        limit: int = 10,
+    ) -> OntologyResolution:
+        return self.provider.resolve(term, limit=limit)
+
+    def neighborhood(
+        self,
+        identifiers: Sequence[str],
+        *,
+        direction: OntologyDirection = "both",
+        predicates: Sequence[str] | None = None,
+        limits: OntologyContextLimits | None = None,
+    ) -> OntologyNeighborhood:
+        limits = limits or OntologyContextLimits()
+        neighborhood = self.provider.neighborhood(
+            identifiers, direction=direction, predicates=predicates, limits=limits
+        )
+        entities = tuple(
+            self._bounded(entity, limits) for entity in neighborhood.entities
+        )
+        reasons = set(neighborhood.truncation_reasons)
+        if any(entity.truncated_fields for entity in entities):
+            reasons.add("metadata")
+        relationships = []
+        for relationship in neighborhood.relationships:
+            if (
+                relationship.object_kind == "literal"
+                and len(relationship.object) > limits.max_literal_chars
+            ):
+                relationship = relationship.model_copy(
+                    update={"object": relationship.object[: limits.max_literal_chars]}
+                )
+                reasons.add("literal_values")
+            relationships.append(relationship)
+        return neighborhood.model_copy(
+            update={
+                "entities": entities,
+                "relationships": tuple(relationships),
+                "truncation_reasons": tuple(sorted(reasons)),
+            }
+        )
 
     @staticmethod
     def _bounded(
-        entity: OntologyEntity, limits: OntologyContextLimits
+        entity: OntologyEntity,
+        limits: OntologyContextLimits,
     ) -> OntologyEntity:
-        truncated: list[str] = []
+        truncated: list[str] = list(entity.truncated_fields)
         label = entity.label
         definition = entity.definition
         if label is not None and len(label) > limits.max_label_chars:
@@ -456,189 +199,11 @@ class OntologyService:
     def _terms(terms: Sequence[str]) -> tuple[str, ...]:
         if isinstance(terms, str):
             raise ValueError("Supply a sequence of ontology terms, not a string")
-        if len(terms) > _MAX_TERMS:
-            raise ValueError(f"At most {_MAX_TERMS} ontology terms may be requested")
-        return tuple(dict.fromkeys(OntologyService._query(term) for term in terms))
-
-    def neighborhood(
-        self,
-        identifiers: Sequence[str],
-        *,
-        direction: OntologyDirection = "both",
-        predicates: Sequence[str] | None = None,
-        limits: OntologyContextLimits | None = None,
-    ) -> OntologyNeighborhood:
-        """Traverse original RDF triples, including blank nodes and literals.
-
-        The node budget includes anonymous resources; literals are terminal
-        values. No OWL expressions are projected into invented named edges.
-        Blank-node IDs are meaningful only within this loaded snapshot.
-        """
-
-        terms = self._terms(identifiers)
-        if direction not in {"outgoing", "incoming", "both"}:
-            raise ValueError(f"Invalid ontology direction: {direction!r}")
-        selected_predicates = None if predicates is None else self._terms(predicates)
-        limits = limits or OntologyContextLimits()
-        with self._lock:
-            self.initialize()
-            predicate_nodes = (
-                None
-                if selected_predicates is None
-                else tuple(
-                    self._iri(self._graph, predicate_text)
-                    for predicate_text in selected_predicates
-                )
-            )
-            seeds = tuple(
-                dict.fromkeys(self.get_entity(term).identifier for term in terms)
-            )
-            selected: list[_Resource] = [
-                URIRef(seed) for seed in seeds[: limits.max_entities]
-            ]
-            visited = set(selected)
-            frontier = selected[:]
-            edges: set[_Triple] = set()
-            reasons = {"max_entities"} if len(selected) < len(seeds) else set()
-            for _ in range(limits.max_depth):
-                following: list[_Resource] = []
-                for edge in self._call(
-                    "read relationships",
-                    lambda: self._edges(frontier, direction, predicate_nodes),
-                ):
-                    if edge in edges:
-                        continue
-                    if len(edges) == limits.max_relationships:
-                        reasons.add("max_relationships")
-                        break
-                    new_resources: list[_Resource] = []
-                    for endpoint in dict.fromkeys((edge[0], edge[2])):
-                        if (
-                            isinstance(endpoint, (URIRef, BNode))
-                            and endpoint not in visited
-                        ):
-                            new_resources.append(endpoint)
-                    if len(selected) + len(new_resources) > limits.max_entities:
-                        reasons.add("max_entities")
-                        continue
-                    edges.add(edge)
-                    visited.update(new_resources)
-                    selected.extend(new_resources)
-                    following.extend(new_resources)
-                frontier = following
-                if not frontier or "max_relationships" in reasons:
-                    break
-            if frontier and any(
-                candidate_edge not in edges
-                for candidate_edge in self._edges(frontier, direction, predicate_nodes)
-            ):
-                reasons.add("max_depth")
-            entities = tuple(
-                self._bounded(self._entity(str(node)), limits)
-                for node in selected
-                if isinstance(node, URIRef)
-            )
-            if any(entity.truncated_fields for entity in entities):
-                reasons.add("metadata")
-            relationship_results = []
-            for subject, predicate, value in sorted(
-                edges, key=lambda rdf_triple: tuple(term.n3() for term in rdf_triple)
-            ):
-                text = str(value)
-                if isinstance(value, Literal) and len(text) > limits.max_literal_chars:
-                    text = text[: limits.max_literal_chars]
-                    reasons.add("literal_values")
-                relationship_results.append(
-                    OntologyRelationship(
-                        subject=(
-                            subject.n3() if isinstance(subject, BNode) else str(subject)
-                        ),
-                        predicate=str(predicate),
-                        object=value.n3() if isinstance(value, BNode) else text,
-                        subject_kind=(
-                            "blank_node" if isinstance(subject, BNode) else "iri"
-                        ),
-                        object_kind=(
-                            "literal"
-                            if isinstance(value, Literal)
-                            else "blank_node" if isinstance(value, BNode) else "iri"
-                        ),
-                        datatype=(
-                            str(value.datatype)
-                            if isinstance(value, Literal) and value.datatype
-                            else None
-                        ),
-                        language=value.language if isinstance(value, Literal) else None,
-                    )
-                )
-            return OntologyNeighborhood(
-                seed_ids=seeds,
-                direction=direction,
-                predicates=(
-                    None
-                    if predicate_nodes is None
-                    else tuple(map(str, predicate_nodes))
-                ),
-                entities=entities,
-                relationships=tuple(relationship_results),
-                truncation_reasons=tuple(sorted(reasons)),
-            )
-
-    def relationships(
-        self,
-        identifier: str,
-        *,
-        direction: OntologyDirection = "outgoing",
-        predicates: Sequence[str] | None = None,
-        limit: int = 60,
-    ) -> OntologyNeighborhood:
-        """Return one hop of original triples with bounded endpoint metadata."""
-
-        self._limit(limit)
-        return self.neighborhood(
-            [identifier],
-            direction=direction,
-            predicates=predicates,
-            limits=OntologyContextLimits(
-                max_depth=1, max_entities=200, max_relationships=limit
-            ),
-        )
-
-    def ancestors(
-        self,
-        identifier: str,
-        *,
-        predicates: Sequence[str] = (_IS_A,),
-        limits: OntologyContextLimits | None = None,
-    ) -> OntologyNeighborhood:
-        """Follow outgoing subclass edges (or explicitly selected predicates).
-
-        The returned neighborhood includes the seed and path edges. Depth is
-        bounded, so this is not guaranteed to be the complete transitive closure.
-        """
-
-        return self.neighborhood(
-            [identifier],
-            direction="outgoing",
-            predicates=predicates,
-            limits=limits or OntologyContextLimits(max_depth=4),
-        )
-
-    def descendants(
-        self,
-        identifier: str,
-        *,
-        predicates: Sequence[str] = (_IS_A,),
-        limits: OntologyContextLimits | None = None,
-    ) -> OntologyNeighborhood:
-        """Follow incoming subclass edges, retaining their original orientation."""
-
-        return self.neighborhood(
-            [identifier],
-            direction="incoming",
-            predicates=predicates,
-            limits=limits or OntologyContextLimits(max_depth=4),
-        )
+        if len(terms) > 20:
+            raise ValueError("At most 20 ontology terms may be requested")
+        if any(not isinstance(term, str) or not term.strip() for term in terms):
+            raise ValueError("Ontology query must be a nonempty string")
+        return tuple(dict.fromkeys(term.strip() for term in terms))
 
     def get_context(
         self,
@@ -650,7 +215,7 @@ class OntologyService:
     ) -> OntologyContext:
         """Resolve up to 20 data terms and return bounded context for unique matches.
 
-        Serialize with ``to_structured_text()`` or ``model_dump(mode='json')``.
+        Serialize with ``model_dump(mode='json')``.
         Unknown/ambiguous terms are reported rather than silently grounded. The
         caller chooses terms from retrieved data; raw graph labels are not
         automatically assumed to be ontology identifiers or OWL classes.
@@ -658,125 +223,193 @@ class OntologyService:
 
         terms = self._terms(terms)
         limits = limits or OntologyContextLimits()
-        with self._lock:
-            source = self.initialize()
-            resolutions = tuple(
-                self.resolve(term, limit=limits.max_candidates) for term in terms
+        source = self.initialize()
+        resolutions = tuple(
+            self.resolve(term, limit=limits.max_candidates) for term in terms
+        )
+        seeds = [
+            result.candidates[0].identifier
+            for result in resolutions
+            if result.status == "resolved"
+        ]
+        context_neighborhood = self.neighborhood(
+            seeds, direction=direction, predicates=predicates, limits=limits
+        )
+        resolutions = tuple(
+            result.model_copy(
+                update={
+                    "candidates": tuple(
+                        self._bounded(candidate, limits)
+                        for candidate in result.candidates
+                    ),
+                }
             )
-            seeds = [
-                result.candidates[0].identifier
+            for result in resolutions
+        )
+        warnings = set(source.warnings) | {
+            f"{result.status}: {result.query}"
+            for result in resolutions
+            if result.status != "resolved"
+        }
+        if any(result.truncated for result in resolutions):
+            warnings.add("resolution candidates truncated")
+        context_entities = (
+            *context_neighborhood.entities,
+            *(
+                resolved_entity
                 for result in resolutions
-                if result.status == "resolved"
-            ]
-            context_neighborhood = self.neighborhood(
-                seeds, direction=direction, predicates=predicates, limits=limits
-            )
-            resolutions = tuple(
-                result.model_copy(
-                    update={
-                        "candidates": tuple(
-                            self._bounded(candidate, limits)
-                            for candidate in result.candidates
-                        ),
-                    }
-                )
-                for result in resolutions
-            )
-            warnings = set(source.warnings) | {
-                f"{result.status}: {result.query}"
-                for result in resolutions
-                if result.status != "resolved"
-            }
-            if any(result.truncated for result in resolutions):
-                warnings.add("resolution candidates truncated")
-            context_entities = (
-                *context_neighborhood.entities,
-                *(
-                    resolved_entity
-                    for result in resolutions
-                    for resolved_entity in result.candidates
-                ),
-            )
-            for entity in context_entities:
-                if entity.truncated_fields:
-                    warnings.add("entity metadata truncated")
-            return OntologyContext(
-                source=source,
-                resolutions=resolutions,
-                neighborhood=context_neighborhood,
-                limits=limits,
-                warnings=tuple(sorted(warnings)),
-            )
+                for resolved_entity in result.candidates
+            ),
+        )
+        for entity in context_entities:
+            if entity.truncated_fields:
+                warnings.add("entity metadata truncated")
+        return OntologyContext(
+            source=source,
+            resolutions=resolutions,
+            neighborhood=context_neighborhood,
+            limits=limits,
+            warnings=tuple(sorted(warnings)),
+        )
 
-    def query_sparql(self, query: str, *, limit: int = 50) -> OntologySparqlResult:
-        """Run native SELECT/ASK/CONSTRUCT/DESCRIBE against this local snapshot.
+    def query_sparql(
+        self,
+        query: str,
+        *,
+        limit: int = 50,
+    ) -> OntologySparqlResult:
+        return self.provider.query_sparql(query, limit=limit)
 
-        SELECT/ASK use RDFLib's standard SPARQL JSON result format. Graph
-        results use Turtle. Bounds apply to returned rows/triples, not query
-        execution or individual value lengths. FROM/SERVICE are excluded because
-        they would access sources outside this configured ontology snapshot.
+    def describe(
+        self,
+        terms: Sequence[str],
+        *,
+        direction: OntologyDirection = "both",
+        predicates: Sequence[str] | None = None,
+        limits: OntologyContextLimits | None = None,
+    ) -> OntologyDatabaseContext:
+        """Explain terms and their graph representation using loaded associations.
+
+        Ambiguous/missing terms stay explicit and do not seed mapping lookup.
+        Only resolved concepts and their ontology neighborhood supply mappings.
         """
-
-        query = self._query(query)
-        self._limit(limit)
-        with self._lock:
-            source = self.initialize()
-
-            def evaluate() -> OntologySparqlResult:
-                prepared = prepareQuery(query, initNs=dict(self._graph.namespaces()))
-                pending: list[object] = [prepared.algebra]
-                while pending:
-                    node = pending.pop()
-                    if isinstance(node, CompValue) and node.name in {
-                        "ServiceGraphPattern",
-                        "DatasetClause",
-                    }:
-                        raise OntologyUnsupportedError(
-                            "FROM and SERVICE are outside the local ontology snapshot"
-                        )
-                    if isinstance(node, dict):
-                        pending.extend(node.values())
-                    elif isinstance(node, (list, tuple)):
-                        pending.extend(node)
-                result = self._graph.query(prepared)
-                truncated = False
-                if result.type == "SELECT":
-                    bindings = result.bindings
-                    truncated = len(bindings) > limit
-                    result.bindings = bindings[:limit]
-                if result.type in {"SELECT", "ASK"}:
-                    serialized = result.serialize(format="json")
-                    assert serialized is not None
-                    data = json.loads(serialized)
-                else:
-                    assert result.graph is not None
-                    triples = sorted(
-                        result.graph, key=lambda edge: tuple(term.n3() for term in edge)
-                    )
-                    truncated = len(triples) > limit
-                    bounded = Graph()
-                    for prefix, namespace in self._graph.namespaces():
-                        bounded.bind(prefix, namespace)
-                    for triple in triples[:limit]:
-                        bounded.add(triple)
-                    data = bounded.serialize(format="turtle")
-                return OntologySparqlResult(
-                    source=source,
-                    query_type=cast(OntologyQueryType, result.type),
-                    data=data,
-                    truncated=truncated,
+        context = self.get_context(
+            terms, direction=direction, predicates=predicates, limits=limits
+        )
+        identifiers = tuple(
+            dict.fromkeys(
+                (
+                    *(
+                        resolution.candidates[0].identifier
+                        for resolution in context.resolutions
+                        if resolution.status == "resolved"
+                    ),
+                    *(entity.identifier for entity in context.neighborhood.entities),
                 )
+            )
+        )
+        return self._with_mappings(context, identifiers)
 
-            return self._call("evaluate SPARQL query", evaluate)
+    def _with_mappings(
+        self,
+        context: OntologyContext,
+        identifiers: Sequence[str],
+        *,
+        mappings: tuple[OntologySchemaMapping, ...] | None = None,
+    ) -> OntologyDatabaseContext:
+        data = self._mapping_data
+        if mappings is None:
+            indices = sorted(
+                {
+                    index
+                    for uri in identifiers
+                    for index in (
+                        data.ontology_index.get(uri, ()) if data is not None else ()
+                    )
+                }
+            )
+            mappings = (
+                tuple(data.mappings[index].model_copy(deep=True) for index in indices)
+                if data is not None
+                else ()
+            )
+        sources = data.sources if data is not None else ()
+        mapped = {entry.ontology_uri for entry in mappings}
+        warnings = list(context.warnings)
+        if data is None:
+            warnings.append("No database schema mappings configured")
+        if any(entry.status != "verified" for entry in mappings):
+            warnings.append(
+                "Some schema mappings are proposed or asserted; they have not been verified"
+            )
+        return OntologyDatabaseContext(
+            ontology=context,
+            mappings=mappings,
+            schema_sources=sources,
+            unmapped_ontology_uris=tuple(
+                uri for uri in identifiers if uri not in mapped
+            ),
+            warnings=tuple(warnings),
+        )
+
+    def resolve_database_element(
+        self,
+        element_name: str,
+        *,
+        property_name: str | None = None,
+        relationship_type: str | None = None,
+        limits: OntologyContextLimits | None = None,
+    ) -> OntologyDatabaseContext:
+        """Find ontology meaning for an explicitly mapped database entity, field or relationship."""
+        if not element_name.strip() or (
+            property_name is not None and relationship_type is not None
+        ):
+            raise ValueError(
+                "Provide a nonempty entity name and at most one property or relationship filter"
+            )
+        data = self._mapping_data
+        indices = (
+            data.database_index.get(
+                (element_name, property_name, relationship_type), ()
+            )
+            if data is not None
+            else ()
+        )
+        mappings = (
+            tuple(data.mappings[index].model_copy(deep=True) for index in indices)
+            if data is not None
+            else ()
+        )
+        uris = tuple(dict.fromkeys(mapping.ontology_uri for mapping in mappings))
+        if len(uris) > 20:
+            raise ValueError(
+                "More than 20 ontology concepts match; narrow the graph element filter"
+            )
+        context = self.get_context(uris, direction="both", limits=limits)
+        result = self._with_mappings(context, uris, mappings=mappings)
+        if not mappings:
+            result = result.model_copy(
+                update={
+                    "warnings": (
+                        *result.warnings,
+                        "No explicit mapping for the requested graph element",
+                    )
+                }
+            )
+        return result
 
 
-def create_ontology_tools(service: OntologyService) -> list[StructuredTool]:
-    """Create LangChain tools bound to one question's ontology snapshot.
+def create_ontology_tools(
+    service: OntologyService,
+    *,
+    include_sparql: bool = False,
+) -> list[StructuredTool]:
+    """Create LangChain tools bound to the initialized ontology service.
 
     Pass the returned tools to a plain or research agent's tool collection.
-    Call ``service.for_question()`` before constructing them for a new question;
-    tools never reload the ontology. LangChain provides ``invoke`` and ``ainvoke``
-    for these synchronous handlers, running async calls in an executor thread.
+    Resource changes require an application restart. LangChain provides
+    ``invoke`` and ``ainvoke`` for these synchronous handlers, running async
+    calls in an executor thread.
     """
 
     def serialize_result(operation: Callable[[], ContractModel]) -> dict[str, Any]:
@@ -804,34 +437,89 @@ def create_ontology_tools(service: OntologyService) -> list[StructuredTool]:
             Field(
                 min_length=1,
                 max_length=20,
-                description="Terms from the question or data, or identifiers returned by ontology_search.",
+                description="Concept names or identifiers found with ontology_search.",
             ),
         ],
         direction: Annotated[
             OntologyDirection,
-            Field(
-                description="Outgoing follows a concept's assertions; incoming finds references; both does both.",
-            ),
-        ] = "outgoing",
+            Field(description="Follow statements from the concepts, toward them, or both."),
+        ] = "both",
         predicates: Annotated[
             list[NonEmptyStr] | None,
-            Field(
-                description="Optional predicate IRIs/CURIEs applied at every hop. Null includes all; [] includes none.",
-            ),
+            Field(max_length=20, description="Optional predicate IRIs or CURIEs to follow; null follows all."),
         ] = None,
-        limits: Annotated[
-            OntologyContextLimits | None,
-            Field(
-                description="Optional output budgets; defaults include two hops, 30 resources and 60 triples.",
-            ),
-        ] = None,
+        max_depth: Annotated[
+            int, Field(ge=0, le=8, description="Relationship hops; zero returns only the selected concepts and mappings."),
+        ] = 2,
+        max_entities: Annotated[
+            int, Field(ge=1, le=200, description="Maximum resources, including anonymous ontology expressions."),
+        ] = 30,
+        max_relationships: Annotated[
+            int, Field(ge=0, le=1000, description="Maximum original ontology statements to return."),
+        ] = 60,
     ) -> dict[str, Any]:
         return serialize_result(
-            lambda: service.get_context(
+            lambda: service.describe(
                 terms,
                 direction=direction,
                 predicates=predicates,
-                limits=limits,
+                limits=OntologyContextLimits(
+                    max_depth=max_depth,
+                    max_entities=max_entities,
+                    max_relationships=max_relationships,
+                ),
+            )
+        )
+
+    def ontology_relationships(
+        term: Annotated[
+            NonEmptyStr, Field(description="Concept name or identifier; prefer an identifier when ambiguous."),
+        ],
+        direction: Annotated[
+            OntologyDirection,
+            Field(description="Outgoing statements start at the concept; incoming statements point to it."),
+        ] = "both",
+        predicates: Annotated[
+            list[NonEmptyStr] | None,
+            Field(max_length=20, description="Optional predicate IRIs or CURIEs; null includes all predicates."),
+        ] = None,
+    ) -> dict[str, Any]:
+        return serialize_result(
+            lambda: service.describe(
+                [term], direction=direction, predicates=predicates,
+                limits=OntologyContextLimits(max_depth=1),
+            )
+        )
+
+    def ontology_ancestors(
+        term: Annotated[
+            NonEmptyStr, Field(description="Class name or identifier whose stated superclasses to inspect."),
+        ],
+        max_depth: Annotated[
+            int, Field(ge=1, le=8, description="Maximum subclass relationship hops."),
+        ] = 4,
+    ) -> dict[str, Any]:
+        return serialize_result(
+            lambda: service.describe(
+                [term], direction="outgoing",
+                predicates=["http://www.w3.org/2000/01/rdf-schema#subClassOf"],
+                limits=OntologyContextLimits(max_depth=max_depth),
+            )
+        )
+
+    def ontology_descendants(
+        term: Annotated[
+            NonEmptyStr, Field(description="Class name or identifier whose stated subclasses to inspect."),
+        ],
+        max_depth: Annotated[
+            int, Field(ge=1, le=8, description="Maximum subclass relationship hops."),
+        ] = 4,
+    ) -> dict[str, Any]:
+        return serialize_result(
+            lambda: service.describe(
+                [term], direction="incoming",
+                predicates=["http://www.w3.org/2000/01/rdf-schema#subClassOf"],
+                limits=OntologyContextLimits(max_depth=max_depth),
             )
         )
 
@@ -848,47 +536,96 @@ def create_ontology_tools(service: OntologyService) -> list[StructuredTool]:
     ) -> dict[str, Any]:
         return serialize_result(lambda: service.query_sparql(query, limit=limit))
 
-    definitions = (
+    definitions: list[tuple[Callable[..., dict[str, Any]], str, str]] = [
         (
             ontology_search,
             "ontology_search",
-            (
-                "Find ontology entities by literal name, alias or identifier. Exact matches rank first. "
-                "Use this to discover full IRIs before requesting ontology_context. Matches are candidates, "
-                "not database schema mappings or inferred facts. Results report counts and truncation."
-            ),
+            "Find ontology concepts by name, synonym or identifier. Exact matches rank first. "
+            "Use returned identifiers with ontology_context to understand their meaning and graph representation.",
         ),
         (
             ontology_context,
             "ontology_context",
-            (
-                "Get bounded ontology meaning for planning, querying retrieved data or interpreting findings. "
-                "Returns labels, definitions, aliases, types and original RDF neighborhood triples with source hashes. "
-                "Missing or ambiguous terms stay explicit; choose an identifier from the candidates or search again. "
-                "Outgoing rdfs:subClassOf traversal finds parents; incoming finds children. Predicate filters apply "
-                "at every hop, so omit them to inspect anonymous OWL restrictions. Truncated context is incomplete. "
-                "Ontology statements do not establish how the database implements them."
-            ),
+            "Explain concepts and how they are modeled in the graph. Returns ontology definitions, "
+            "related concepts and original statements together with explicit schema bindings: entity names, "
+            "properties, relationships, endpoints and directions. Use this before planning a graph query "
+            "or interpreting results. Ambiguous terms return candidates; choose an identifier and call again. "
+            "Use direction and predicate filters for focused follow-up; increase traversal budgets when "
+            "truncation is reported, or use max_depth=0 for just the selected concepts and mappings. "
+            "Missing mappings and unverified alignments are explicit. Context is bounded; no OWL inference is added.",
         ),
         (
-            ontology_sparql,
-            "ontology_sparql",
-            (
-                "Answer precise ontology questions with native SELECT, ASK, CONSTRUCT or DESCRIBE. "
-                "Use full IRIs, explicit PREFIX declarations or graph-bound prefixes; ORDER BY gives stable SELECT order. "
-                "Returns standard SPARQL JSON or Turtle, source hashes and truncation. "
-                "Only the configured snapshot is queried: updates, FROM and SERVICE are unavailable. "
-                "No OWL inference is added. Output bounds do not limit execution cost or individual text values."
-            ),
+            ontology_relationships,
+            "ontology_relationships",
+            "Inspect a concept's immediate ontology statements and corresponding database schema mappings. "
+            "For properties, inspect outgoing domain and range statements to understand intended endpoints. "
+            "For classes, inspect restrictions and related concepts. Anonymous expressions may need deeper "
+            "ontology_context inspection. Ambiguity and missing mappings remain explicit. This does not query database records.",
         ),
-    )
+        (
+            ontology_ancestors,
+            "ontology_ancestors",
+            "Inspect a class's stated superclasses via outgoing rdfs:subClassOf relationships, "
+            "with definitions and database schema mappings. Use to understand broader categories before "
+            "planning queries or interpreting results. Returns original statements, including anonymous "
+            "restrictions; no OWL inference or database-record classification is performed.",
+        ),
+        (
+            ontology_descendants,
+            "ontology_descendants",
+            "Inspect a class's stated subclasses via incoming rdfs:subClassOf relationships, "
+            "with definitions and database schema mappings. Use to discover narrower categories relevant "
+            "to a question. No OWL inference is performed; absence or truncation does not prove there are "
+            "no other subclasses or database records.",
+        ),
+    ]
+    if service._schema_path is not None or service._supplied_mappings is not None:
+
+        def ontology_database_element(
+            element_name: Annotated[
+                NonEmptyStr,
+                Field(description="Graph entity name, such as a node label; case-sensitive."),
+            ],
+            property_name: NonEmptyStr | None = None,
+            relationship_type: NonEmptyStr | None = None,
+        ) -> dict[str, Any]:
+            return serialize_result(
+                lambda: service.resolve_database_element(
+                    element_name,
+                    property_name=property_name,
+                    relationship_type=relationship_type,
+                )
+            )
+
+        definitions.append(
+            (
+                ontology_database_element,
+                "ontology_database_element",
+                "Explain the ontology meaning of a graph entity, property or relationship. "
+                "Use this when starting from graph schema or retrieved data. Provide element_name and "
+                "at most one property_name or relationship_type. Returns explicit schema mappings and ontology "
+                "context; unknown bindings remain explicit.",
+            )
+        )
+    if include_sparql:
+        definitions.append(
+            (
+                ontology_sparql,
+                "ontology_sparql",
+                "Query the ontology with SELECT, ASK, CONSTRUCT or DESCRIBE for precise follow-up questions. "
+                "Returns SPARQL JSON or Turtle. Only the loaded snapshot is available; FROM, SERVICE and "
+                "updates are excluded. Output limits do not bound query execution cost.",
+            )
+        )
     return [
         StructuredTool.from_function(
             func=handler,
             name=tool_name,
             description=tool_description,
             handle_tool_error=True,
-            handle_validation_error=lambda validation_error: f"Invalid ontology tool arguments: {validation_error}",
+            handle_validation_error=lambda validation_error: (
+                f"Invalid ontology tool arguments: {validation_error}"
+            ),
         )
         for handler, tool_name, tool_description in definitions
     ]

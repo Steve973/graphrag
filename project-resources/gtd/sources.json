@@ -1,0 +1,29 @@
+{
+  "retrieved_on": "2026-10-12",
+  "gist_url": "https://gist.github.com/rvanbruggen/0a9f607b1b2647e6ea3b",
+  "gist_revision": "1ef6dc22a0e37fcc211571168c9ce23a0caa6754",
+  "files": [
+    {
+      "path": "neo4j/1-load_gtdb_script.cql",
+      "source": "https://gist.githubusercontent.com/rvanbruggen/0a9f607b1b2647e6ea3b/raw/238ecf5600d26e0c6b9985028c5c563cf827a07a/1-load_gtdb_script.cql",
+      "bytes": 17689,
+      "sha256": "12c52ff3f4819bc38788b3d763ff9355fa9e36a218b7d6457a0b4cd799765452"
+    },
+    {
+      "path": "neo4j/2-query_gtdb.cql",
+      "source": "https://gist.githubusercontent.com/rvanbruggen/0a9f607b1b2647e6ea3b/raw/1b4beffd8c47fdbdb811cc398b0318bcee5127d5/2-query_gtdb.cql",
+      "bytes": 2085,
+      "sha256": "a9677bf50b444d0f694c2b1f8ddda95b098210e4e78eeb328f354b247f05ecb4"
+    },
+    {
+      "path": "ontology/gtdonto.ttl",
+      "source": "https://api.triplydb.com/datasets/ReemAlfayez/GTDOnto/download",
+      "accept": "text/turtle",
+      "bytes": 58178,
+      "sha256": "2b55169b6502ee82769cf9e674fdc95cd61a0d49cb9ec31a63df0d5e0f955cdf",
+      "downloaded_bytes": 252850,
+      "downloaded_sha256": "16ffa7b83acf3af577c50f30f6ddd6847661adadd89ac18b92c5e0c63be47d20",
+      "local_transformation": "Reserialized as compact Turtle with readable prefixes and grouped statements; literal precision preserved and RDF graph equivalence verified (1,441 triples)."
+    }
+  ]
+}

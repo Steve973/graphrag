@@ -1,0 +1,272 @@
+{
+  "description": "Schema inventory derived locally from the original Cypher import; not an author-published schema or a LinkML schema.",
+  "source": "https://gist.github.com/rvanbruggen/0a9f607b1b2647e6ea3b",
+  "source_file": "1-load_gtdb_script.cql",
+  "notes": [
+    "Types describe the actual import expressions, not intended GTD semantics. LOAD CSV values remain strings unless converted.",
+    "No cardinality or uniqueness constraints are inferred.",
+    "Weapon represents a GTD weapon-type category in this import.",
+    "Ontology mappings have not been established."
+  ],
+  "nodes": {
+    "AttackType": {
+      "properties": {
+        "id": {
+          "type_from_import": "unspecified"
+        },
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "City": {
+      "properties": {
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "Corporation": {
+      "properties": {
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "Country": {
+      "properties": {
+        "id": {
+          "type_from_import": "unspecified"
+        },
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "Event": {
+      "properties": {
+        "id": {
+          "type_from_import": "integer"
+        },
+        "year": {
+          "type_from_import": "integer"
+        },
+        "month": {
+          "type_from_import": "integer"
+        },
+        "day": {
+          "type_from_import": "integer"
+        },
+        "latitude": {
+          "type_from_import": "string"
+        },
+        "longitude": {
+          "type_from_import": "string"
+        },
+        "specificity": {
+          "type_from_import": "string"
+        },
+        "vicinity": {
+          "type_from_import": "string"
+        },
+        "location": {
+          "type_from_import": "string"
+        },
+        "summary": {
+          "type_from_import": "string"
+        },
+        "crit1": {
+          "type_from_import": "integer"
+        },
+        "crit2": {
+          "type_from_import": "integer"
+        },
+        "crit3": {
+          "type_from_import": "integer"
+        },
+        "doubt": {
+          "type_from_import": "integer"
+        },
+        "alternative": {
+          "type_from_import": "string"
+        },
+        "multiple": {
+          "type_from_import": "integer"
+        },
+        "success": {
+          "type_from_import": "integer"
+        },
+        "suicide": {
+          "type_from_import": "integer"
+        },
+        "motive": {
+          "type_from_import": "string"
+        },
+        "weapondetail": {
+          "type_from_import": "string"
+        },
+        "nkill": {
+          "type_from_import": "string"
+        },
+        "nkillter": {
+          "type_from_import": "string"
+        },
+        "nwound": {
+          "type_from_import": "string"
+        },
+        "nwoundter": {
+          "type_from_import": "string"
+        },
+        "property": {
+          "type_from_import": "string"
+        },
+        "propextent": {
+          "type_from_import": "string"
+        },
+        "propextent_txt": {
+          "type_from_import": "string"
+        },
+        "propvalue": {
+          "type_from_import": "string"
+        },
+        "propcomment": {
+          "type_from_import": "string"
+        },
+        "ransom": {
+          "type_from_import": "integer"
+        },
+        "ransomamt": {
+          "type_from_import": "integer"
+        },
+        "ransomnote": {
+          "type_from_import": "string"
+        },
+        "addnotes": {
+          "type_from_import": "string"
+        },
+        "dbsource": {
+          "type_from_import": "string"
+        }
+      }
+    },
+    "Group": {
+      "properties": {
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "ProvState": {
+      "properties": {
+        "name": {
+          "type_from_import": "string"
+        }
+      }
+    },
+    "Region": {
+      "properties": {
+        "id": {
+          "type_from_import": "unspecified"
+        },
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "Target": {
+      "properties": {
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "TargetType": {
+      "properties": {
+        "id": {
+          "type_from_import": "unspecified"
+        },
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    },
+    "Weapon": {
+      "properties": {
+        "id": {
+          "type_from_import": "unspecified"
+        },
+        "name": {
+          "type_from_import": "unspecified"
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "source_label": "Country",
+      "type": "PART_OF",
+      "target_label": "Region",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "ProvState",
+      "type": "PART_OF",
+      "target_label": "Country",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "City",
+      "type": "PART_OF",
+      "target_label": "ProvState",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Target",
+      "type": "IS_A",
+      "target_label": "TargetType",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Corporation",
+      "type": "RELATED_TO",
+      "target_label": "Target",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Target",
+      "type": "IS_FROM",
+      "target_label": "Country",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Event",
+      "type": "EVENT_LOCATED_IN",
+      "target_label": "City",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Event",
+      "type": "IS_OF_ATTACKTYPE",
+      "target_label": "AttackType",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Event",
+      "type": "TARGETS",
+      "target_label": "Target",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Group",
+      "type": "CARRIES_OUT",
+      "target_label": "Event",
+      "direction": "outgoing"
+    },
+    {
+      "source_label": "Event",
+      "type": "USED_WEAPON",
+      "target_label": "Weapon",
+      "direction": "outgoing"
+    }
+  ]
+}

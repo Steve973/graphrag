@@ -1,0 +1,1809 @@
+@prefix genid: <https://triplydb.com/.well-known/genid/> .
+@prefix gtd: <http://www.semanticweb.org/user/ontologies/2020/3/GTDB#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://www.semanticweb.org/user/ontologies/2020/3/GTDB> a owl:Ontology .
+
+gtd:AffiliatedInstitution a owl:Class ;
+    rdfs:label "AffiliatedInstitution" ;
+    rdfs:isDefinedBy "87"^^xsd:int ;
+    rdfs:subClassOf gtd:ReligiousFiguresInstitutions .
+
+gtd:AirlineOfficerPersonnel a owl:Class ;
+    rdfs:label "AirlineOfficerPersonnel" ;
+    rdfs:isDefinedBy "43"^^xsd:int ;
+    rdfs:subClassOf gtd:AirportsAircraft .
+
+gtd:Airport a owl:Class ;
+    rdfs:label "Airport" ;
+    rdfs:isDefinedBy "44"^^xsd:int ;
+    rdfs:subClassOf gtd:AirportsAircraft .
+
+gtd:AllegedInformant a owl:Class ;
+    rdfs:label "AllegedInformant" ;
+    rdfs:isDefinedBy "113"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Ambulance a owl:Class ;
+    rdfs:label "Ambulance" ;
+    rdfs:isDefinedBy "63"^^xsd:int ;
+    rdfs:subClassOf gtd:OtherTarget .
+
+gtd:ArsonFire a owl:Class ;
+    rdfs:label "ArsonFire" ;
+    rdfs:isDefinedBy "18"^^xsd:int ;
+    rdfs:subClassOf gtd:Incendiary .
+
+gtd:Assassination a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:AttemptedRescue a owl:Class ;
+    rdfs:label "AttemptedRescue" ;
+    rdfs:isDefinedBy "1"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:AutomaticorSemiAutomaticRifle a owl:Class ;
+    rdfs:label "AutomaticorSemiAutomaticRifle" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Firearms .
+
+gtd:Biological a owl:Class ;
+    rdfs:label "Biological" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:BluntObject a owl:Class ;
+    rdfs:label "BluntObject" ;
+    rdfs:isDefinedBy "21"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:BridgeCarTunnel a owl:Class ;
+    rdfs:label "BridgeCarTunnel" ;
+    rdfs:isDefinedBy "103"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:Bus a owl:Class ;
+    rdfs:label "Bus" ;
+    rdfs:isDefinedBy "99"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:BusStationStop a owl:Class ;
+    rdfs:label "BusStationStop" ;
+    rdfs:isDefinedBy "101"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:Callpost_incident a owl:Class ;
+    rdfs:label "Callpost_incident" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:Callpre_incident a owl:Class ;
+    rdfs:label "Callpre_incident" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:CivilianMaritime a owl:Class ;
+    rdfs:label "CivilianMaritime" ;
+    rdfs:isDefinedBy "57"^^xsd:int ;
+    rdfs:subClassOf gtd:Maritime .
+
+gtd:Clinics a owl:Class ;
+    rdfs:label "Clinics" ;
+    rdfs:isDefinedBy "40"^^xsd:int ;
+    rdfs:subClassOf gtd:AbortionRelated .
+
+gtd:Combination a owl:Class ;
+    rdfs:label "Combination" ;
+    rdfs:isDefinedBy "6"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:CommercialMaritime a owl:Class ;
+    rdfs:label "CommercialMaritime" ;
+    rdfs:isDefinedBy "58"^^xsd:int ;
+    rdfs:subClassOf gtd:Maritime .
+
+gtd:Construction a owl:Class ;
+    rdfs:label "Construction" ;
+    rdfs:isDefinedBy "12"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:DemilitarizedZone a owl:Class ;
+    rdfs:label "DemilitarizedZone" ;
+    rdfs:isDefinedBy "66"^^xsd:int ;
+    rdfs:subClassOf gtd:OtherTarget .
+
+gtd:DiplomaticPersonnel a owl:Class ;
+    rdfs:label "DiplomaticPersonnel" ;
+    rdfs:isDefinedBy "45"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_Diplomatic .
+
+gtd:DomesticNGO a owl:Class ;
+    rdfs:label "DomesticNGO" ;
+    rdfs:isDefinedBy "61"^^xsd:int ;
+    rdfs:subClassOf gtd:NGO .
+
+gtd:DynamiteTNT a owl:Class ;
+    rdfs:label "DynamiteTNT" ;
+    rdfs:isDefinedBy "28"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:ElectionRelated a owl:Class ;
+    rdfs:label "ElectionRelated" ;
+    rdfs:isDefinedBy "19"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:Electricity a owl:Class ;
+    rdfs:label "Electricity" ;
+    rdfs:isDefinedBy "107"^^xsd:int ;
+    rdfs:subClassOf gtd:Utilities .
+
+gtd:Email a owl:Class ;
+    rdfs:label "Email" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:EmbassyConsulate a owl:Class ;
+    rdfs:label "EmbassyConsulate" ;
+    rdfs:isDefinedBy "46"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_Diplomatic .
+
+gtd:EntertainmentCulturalStadiumCasino a owl:Class ;
+    rdfs:label "EntertainmentCulturalStadiumCasino" ;
+    rdfs:isDefinedBy "11"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:ExistCompetingClaim a owl:Class ;
+    rdfs:label "ExistCompetingClaim" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:CompetingClaimResp .
+
+gtd:Explosive a owl:Class ;
+    rdfs:label "Explosive" ;
+    rdfs:isDefinedBy "30"^^xsd:int ;
+    rdfs:subClassOf gtd:Chemical .
+
+gtd:FacilityInfrastructureAttack a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:FakeWeapons a owl:Class ;
+    rdfs:label "FakeWeapons" ;
+    rdfs:isDefinedBy "7"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:FarmRanch a owl:Class ;
+    rdfs:label "FarmRanch" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:Farmer a owl:Class ;
+    rdfs:label "Farmer" ;
+    rdfs:isDefinedBy "72"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:FireFighterTruck a owl:Class ;
+    rdfs:label "FireFighterTruck" ;
+    rdfs:isDefinedBy "64"^^xsd:int ;
+    rdfs:subClassOf gtd:OtherTarget .
+
+gtd:FoodSupply a owl:Class ;
+    rdfs:label "FoodSupply" ;
+    rdfs:isDefinedBy "51"^^xsd:int ;
+    rdfs:subClassOf gtd:FoodWaterSupply .
+
+gtd:Gas a owl:Class ;
+    rdfs:label "Gas" ;
+    rdfs:isDefinedBy "106"^^xsd:int ;
+    rdfs:subClassOf gtd:Utilities .
+
+gtd:GasOilElectric a owl:Class ;
+    rdfs:label "GasOilElectric" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:GovernmentBuildingFacilityOffice a owl:Class ;
+    rdfs:label "GovernmentBuildingFacilityOffice" ;
+    rdfs:isDefinedBy "21"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:GovernmentPersonnel a owl:Class ;
+    rdfs:label "GovernmentPersonnel" ;
+    rdfs:isDefinedBy "18"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:Grenade a owl:Class ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:Handgun a owl:Class ;
+    rdfs:label "Handgun" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Firearms .
+
+gtd:HandsFeetFists a owl:Class ;
+    rdfs:label "HandsFeetFists" ;
+    rdfs:isDefinedBy "22"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:HeadofState a owl:Class ;
+    rdfs:label "HeadofState" ;
+    rdfs:isDefinedBy "17"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:HighwayRoadTollTrafficSignal a owl:Class ;
+    rdfs:label "HighwayRoadTollTrafficSignal" ;
+    rdfs:isDefinedBy "104"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:HostageTaking_BarricadeIncident a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:HostageTaking_Kidnapping a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:HostagesEscaped a owl:Class ;
+    rdfs:label "HostagesEscaped" ;
+    rdfs:isDefinedBy "3"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:HostagesReleasedByPerpetrators a owl:Class ;
+    rdfs:label "HostagesReleasedByPerpetrators" ;
+    rdfs:isDefinedBy "2"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:HotelResort a owl:Class ;
+    rdfs:label "HotelResort" ;
+    rdfs:isDefinedBy "8"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:HouseApartmentResidence a owl:Class ;
+    rdfs:label "HouseApartmentResidence" ;
+    rdfs:isDefinedBy "76"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:INC_198812210003 a gtd:Incident,
+        owl:NamedIndividual ;
+    gtd:IncID "198812210003" ;
+    gtd:hasAttackType gtd:ATTK_198812210003 ;
+    gtd:hasInclusionCriteria gtd:INCRT_198812210003 ;
+    gtd:hasLocation gtd:LOC_198812210003 ;
+    gtd:hasTarget gtd:TRGT_198812210003 ;
+    gtd:iday "21"^^xsd:integer ;
+    gtd:imonth "12"^^xsd:integer ;
+    gtd:isDoubted "false"^^xsd:boolean ;
+    gtd:isHostKidn "false"^^xsd:boolean ;
+    gtd:isMultiple "false"^^xsd:boolean ;
+    gtd:isPropertyDamaged "true"^^xsd:boolean ;
+    gtd:iyear "1988"^^xsd:integer ;
+    gtd:numKills "270"^^xsd:integer ;
+    gtd:numKillsUs "189"^^xsd:integer ;
+    gtd:numWound "0"^^xsd:integer ;
+    gtd:usedWeapon gtd:WPN_198812210003 ;
+    gtd:weapDetails "Explosive" .
+
+gtd:INC_200109110004 a gtd:Incident,
+        owl:NamedIndividual ;
+    gtd:IncID "200109110004" ;
+    gtd:IsPerpIndividual "false"^^xsd:boolean ;
+    gtd:addNotes "This attack was one of four related incidents (cf. 200109110004-07). Three people including two attendants, Karen Martin and Barbara Arestegui, were stabbed or had their throats slashed by the hijackers. American Airlines Flight 11 departed from Boston's Logan International Airport at 7:59 am local time. The 9/11 Commission estimated that the hijacking began at 8:14 am. Since the aircraft crashed into the North Tower at 8:46 am, the hijacking lasted 32 minutes. Details on the number of people wounded in the attacks are very difficult to confirm The numbers reported in the GTD are conservative estimates for immediate casualties, first responders, and residents, based on documentation for the September 11th Victims Compensation Fund (VCF)." ;
+    gtd:hasAttackType gtd:ATTK_200109110004 ;
+    gtd:hasClaimMode gtd:CLAIM_200109110004 ;
+    gtd:hasHostKid gtd:HosKId_200109110004 ;
+    gtd:hasInclusionCriteria gtd:INCRT_200109110004 ;
+    gtd:hasLocation gtd:LOC_200109110004 ;
+    gtd:hasPerpGroup gtd:PERPGR_200109110004 ;
+    gtd:hasPropertyDamage gtd:PRP_200109110004 ;
+    gtd:hasSourceInfo gtd:SRCCT_200109110004 ;
+    gtd:hasTarget gtd:TRGT_200109110004_1,
+        gtd:TRGT_200109110004_2,
+        gtd:TRGT_200109110004_3 ;
+    gtd:iday "11"^^xsd:integer ;
+    gtd:imonth "9"^^xsd:integer ;
+    gtd:isClaimed "true"^^xsd:boolean ;
+    gtd:isDoubted "false"^^xsd:boolean ;
+    gtd:isHostKidn "true"^^xsd:boolean ;
+    gtd:isMultiple "true"^^xsd:boolean ;
+    gtd:isPropertyDamaged "true"^^xsd:boolean ;
+    gtd:iyear "2001"^^xsd:integer ;
+    gtd:numKills "1385"^^xsd:integer ;
+    gtd:numKillsPerp "5"^^xsd:integer ;
+    gtd:numKillsUs "1361"^^xsd:integer ;
+    gtd:numPerp "5"^^xsd:integer ;
+    gtd:numPerpCaptured "0"^^xsd:integer ;
+    gtd:numPerpWound "0"^^xsd:integer ;
+    gtd:numWound "10878"^^xsd:integer ;
+    gtd:perpMotive "Unknown" ;
+    gtd:relatedTo gtd:INC_200109110005,
+        gtd:INC_200109110006,
+        gtd:INC_200109110007 ;
+    gtd:summary "09/11/2001: This was one of four related attacks that occurred in the United States that are known collectively as the 9/11 Attacks. In the first attack, which occurred at 8:46 am local time, American Airlines Flight 11 crashed into the North Tower of the World Trade Center Complex in New York City, New York. Five hijackers belonging to Al-Qaida took control of the Boeing 767 aircraft on a flight originating from Logan International Airport in Boston, Massachusetts, and destined for Los Angeles International Airport. There were 76 passengers, 11 crew members and five hijackers on the plane, all of whom died upon impact. The North Tower collapsed at 10:28 a.m. local time after the South Tower had collapsed at 9:59 a.m. local time. At least 2,770 people died as a result of the attacks in New York City, including 10 hijackers as well as responders who contracted cancer and respiratory illnesses at the attack site and passed away years later. More than 21,000 others were injured, according to information reported by the September 11th Victims Compensation Fund. Al-Qaida leaders including Osama bin Laden and Khalid Shaikh Mohammed claimed responsibility for the attacks in multiple videotaped interviews." ;
+    gtd:targetSpecificName "Passengers and crew members on American Airlines Flight 11 and the people working in the North Tower of the World Trade Center in New York City" ;
+    gtd:usedWeapon gtd:WPN_200109110004_1,
+        gtd:WPN_200109110004_2,
+        gtd:WPN_200109110004_3 ;
+    gtd:weapDetails "The attackers reportedly gained control of the plane using sharp objects resembling knives or other sharpened metal objects. The attackers turned the airplane into a missile when flying it into the North Tower of the World Trade Center Complex. The airplane's jet fuel ignited the building and resulted in a massive fire that contributed to the collapse of the North Tower. Mace may have also been used in subduing the passengers and crew members." .
+
+gtd:IncID a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:IndustrialTextilesFactory a owl:Class ;
+    rdfs:label "IndustrialTextilesFactory" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:InsurgencyGuerillaAction a owl:Class ;
+    rdfs:label "InsurgencyGuerillaAction" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:AlternativeDesignation .
+
+gtd:Intelligence a owl:Class ;
+    rdfs:label "Intelligence" ;
+    rdfs:isDefinedBy "20"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:InterIntraGroupConflict a owl:Class ;
+    rdfs:label "InterIntraGroupConflict" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:AlternativeDesignation .
+
+gtd:InternationalNGO a owl:Class ;
+    rdfs:label "InternationalNGO" ;
+    rdfs:isDefinedBy "62"^^xsd:int ;
+    rdfs:subClassOf gtd:NGO .
+
+gtd:InternationalOrganization a owl:Class ;
+    rdfs:label "InternationalOrganization" ;
+    rdfs:isDefinedBy "47"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_Diplomatic .
+
+gtd:InternetInfrastructure a owl:Class ;
+    rdfs:label "InternetInfrastructure" ;
+    rdfs:isDefinedBy "91"^^xsd:int ;
+    rdfs:subClassOf gtd:Telecommunication .
+
+gtd:IsPerpIndividual a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:JudgeAttorneyCourt a owl:Class ;
+    rdfs:label "JudgeAttorneyCourt" ;
+    rdfs:isDefinedBy "14"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:LaborUnionRelated a owl:Class ;
+    rdfs:label "LaborUnionRelated" ;
+    rdfs:isDefinedBy "82"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Laborer a owl:Class ;
+    rdfs:label "Laborer" ;
+    rdfs:isDefinedBy "77"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:LackofIntentionality a owl:Class ;
+    rdfs:label "LackofIntentionality" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:AlternativeDesignation .
+
+gtd:Landmine a owl:Class ;
+    rdfs:label "Landmine" ;
+    rdfs:isDefinedBy "8"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:LegalServices a owl:Class ;
+    rdfs:label "LegalServices" ;
+    rdfs:isDefinedBy "112"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:Letter a owl:Class ;
+    rdfs:label "Letter" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:MailBomb a owl:Class ;
+    rdfs:label "MailBomb" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:Major a owl:Class ;
+    rdfs:label "Major" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:ExtentPropertyDamage .
+
+gtd:MarketplacePlazaSquare a owl:Class ;
+    rdfs:label "MarketplacePlazaSquare" ;
+    rdfs:isDefinedBy "74"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:MedicalPharmaceutical a owl:Class ;
+    rdfs:label "MedicalPharmaceutical" ;
+    rdfs:isDefinedBy "6"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:MemorialCemeteryMonument a owl:Class ;
+    rdfs:label "MemorialCemeteryMonument" ;
+    rdfs:isDefinedBy "80"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:MilitaryAircraft a owl:Class ;
+    rdfs:label "MilitaryAircraft" ;
+    rdfs:isDefinedBy "31"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryBarracksBaseHeadquartersCheckpost a owl:Class ;
+    rdfs:label "MilitaryBarracksBaseHeadquartersCheckpost" ;
+    rdfs:isDefinedBy "27"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryCheckpoint a owl:Class ;
+    rdfs:label "MilitaryCheckpoint" ;
+    rdfs:isDefinedBy "36"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryMaritime a owl:Class ;
+    rdfs:label "MilitaryMaritime" ;
+    rdfs:isDefinedBy "32"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryPersonnelsoldierstroopsofficersforces a owl:Class ;
+    rdfs:label "MilitaryPersonnelsoldierstroopsofficersforces" ;
+    rdfs:isDefinedBy "34"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryRecruitingStationAcademy a owl:Class ;
+    rdfs:label "MilitaryRecruitingStationAcademy" ;
+    rdfs:isDefinedBy "28"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryTransportationVehicle a owl:Class ;
+    rdfs:label "MilitaryTransportationVehicle" ;
+    rdfs:isDefinedBy "35"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryUnitPatrolConvoy a owl:Class ;
+    rdfs:label "MilitaryUnitPatrolConvoy" ;
+    rdfs:isDefinedBy "29"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:MilitaryWeaponry a owl:Class ;
+    rdfs:label "MilitaryWeaponry" ;
+    rdfs:isDefinedBy "30"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:Mining a owl:Class ;
+    rdfs:label "Mining" ;
+    rdfs:isDefinedBy "10"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:Minor a owl:Class ;
+    rdfs:label "Minor" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:ExtentPropertyDamage .
+
+gtd:MolotovCocktailPetrolBomb a owl:Class ;
+    rdfs:label "MolotovCocktailPetrolBomb" ;
+    rdfs:isDefinedBy "19"^^xsd:int ;
+    rdfs:subClassOf gtd:Incendiary .
+
+gtd:MultinationalCorporation a owl:Class ;
+    rdfs:label "MultinationalCorporation" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:MultipleTelecommunicationTargets a owl:Class ;
+    rdfs:label "MultipleTelecommunicationTargets" ;
+    rdfs:isDefinedBy "92"^^xsd:int ;
+    rdfs:subClassOf gtd:Telecommunication .
+
+gtd:MuseumCulturalCenterCulturalHouse a owl:Class ;
+    rdfs:label "MuseumCulturalCenterCulturalHouse" ;
+    rdfs:isDefinedBy "81"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:NATO a owl:Class ;
+    rdfs:label "NATO" ;
+    rdfs:isDefinedBy "37"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:NamedCivilian a owl:Class ;
+    rdfs:label "NamedCivilian" ;
+    rdfs:isDefinedBy "68"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:NewspaperJournalistStaffFacility a owl:Class ;
+    rdfs:label "NewspaperJournalistStaffFacility" ;
+    rdfs:isDefinedBy "53"^^xsd:int ;
+    rdfs:subClassOf gtd:JournalistsMedia .
+
+gtd:NoCompetingClaim a owl:Class ;
+    rdfs:label "NoCompetingClaim" ;
+    rdfs:isDefinedBy "0"^^xsd:int ;
+    rdfs:subClassOf gtd:CompetingClaimResp .
+
+gtd:NoFirstorderIdentified a owl:Class ;
+    rdfs:label "NoFirstorderIdentified" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:Specificity .
+
+gtd:NoPropertyDamage a owl:Class ;
+    rdfs:label "NoPropertyDamage" ;
+    rdfs:isDefinedBy "0"^^xsd:int ;
+    rdfs:subClassOf gtd:PropertyDamage .
+
+gtd:NoRansom a owl:Class ;
+    rdfs:subClassOf gtd:RansomStatus .
+
+gtd:NoSecondOrderIdentified a owl:Class ;
+    rdfs:label "NoSecondOrderIdentified" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Specificity .
+
+gtd:NoVictimsHostageKidnapped a owl:Class ;
+    rdfs:subClassOf gtd:HostagesKidnappingStatus .
+
+gtd:NonStateMilitia a owl:Class ;
+    rdfs:label "NonStateMilitia" ;
+    rdfs:isDefinedBy "94"^^xsd:int ;
+    rdfs:subClassOf gtd:TerroristsNonStateMilitia .
+
+gtd:NoncombatantPersonnel a owl:Class ;
+    rdfs:label "NoncombatantPersonnel" ;
+    rdfs:isDefinedBy "33"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:NotOccuredCityvillagetown a owl:Class ;
+    rdfs:label "NotOccuredCityvillagetown" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Specificity .
+
+gtd:Noteleftatscene a owl:Class ;
+    rdfs:label "Noteleftatscene" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:Nuclear a owl:Class ;
+    rdfs:label "Nuclear" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:OccurredCityvillagetownNolatlong a owl:Class ;
+    rdfs:label "OccurredCityvillagetownNolatlong" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Specificity .
+
+gtd:Oil a owl:Class ;
+    rdfs:label "Oil" ;
+    rdfs:isDefinedBy "108"^^xsd:int ;
+    rdfs:subClassOf gtd:Utilities .
+
+gtd:OilTanker a owl:Class ;
+    rdfs:label "OilTanker" ;
+    rdfs:isDefinedBy "59"^^xsd:int ;
+    rdfs:subClassOf gtd:Maritime .
+
+gtd:OtherClaim a owl:Class ;
+    rdfs:label "OtherClaim" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:OtherCrimeType a owl:Class ;
+    rdfs:label "OtherCrimeType" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:AlternativeDesignation .
+
+gtd:OtherExplosiveType a owl:Class ;
+    rdfs:label "OtherExplosiveType" ;
+    rdfs:isDefinedBy "17"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:OtherFacility a owl:Class ;
+    rdfs:label "OtherFacility" ;
+    rdfs:isDefinedBy "98"^^xsd:int ;
+    rdfs:subClassOf gtd:Tourists .
+
+gtd:OtherGunType a owl:Class ;
+    rdfs:label "OtherGunType" ;
+    rdfs:isDefinedBy "6"^^xsd:int ;
+    rdfs:subClassOf gtd:Firearms .
+
+gtd:OtherMedia a owl:Class ;
+    rdfs:label "OtherMedia" ;
+    rdfs:isDefinedBy "56"^^xsd:int ;
+    rdfs:subClassOf gtd:JournalistsMedia .
+
+gtd:OtherPersonnel a owl:Class ;
+    rdfs:label "OtherPersonnel" ;
+    rdfs:isDefinedBy "50"^^xsd:int ;
+    rdfs:subClassOf gtd:EducationalInstitution .
+
+gtd:OtherWeapon a owl:Class ;
+    rdfs:label "OtherWeapon" ;
+    rdfs:isDefinedBy "12"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:Paramilitary a owl:Class ;
+    rdfs:label "Paramilitary" ;
+    rdfs:isDefinedBy "39"^^xsd:int ;
+    rdfs:subClassOf gtd:Military .
+
+gtd:PartyOfficeFacility a owl:Class ;
+    rdfs:label "PartyOfficeFacility" ;
+    rdfs:isDefinedBy "110"^^xsd:int ;
+    rdfs:subClassOf gtd:ViolentPoliticalParty .
+
+gtd:PartyOfficialCandidateOtherPersonnel a owl:Class ;
+    rdfs:label "PartyOfficialCandidateOtherPersonnel" ;
+    rdfs:isDefinedBy "109"^^xsd:int ;
+    rdfs:subClassOf gtd:ViolentPoliticalParty .
+
+gtd:Personalclaim a owl:Class ;
+    rdfs:label "Personalclaim" ;
+    rdfs:isDefinedBy "8"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:Personnel a owl:Class ;
+    rdfs:label "Personnel" ;
+    rdfs:isDefinedBy "41"^^xsd:int ;
+    rdfs:subClassOf gtd:AbortionRelated .
+
+gtd:PipeBomb a owl:Class ;
+    rdfs:label "PipeBomb" ;
+    rdfs:isDefinedBy "31"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:PlaceofWorship a owl:Class ;
+    rdfs:label "PlaceofWorship" ;
+    rdfs:isDefinedBy "86"^^xsd:int ;
+    rdfs:subClassOf gtd:ReligiousFiguresInstitutions .
+
+gtd:Poisoning a owl:Class ;
+    rdfs:label "Poisoning" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Chemical .
+
+gtd:PoliceBuildingHeadquartersstationschool a owl:Class ;
+    rdfs:label "PoliceBuildingHeadquartersstationschool" ;
+    rdfs:isDefinedBy "22"^^xsd:int ;
+    rdfs:subClassOf gtd:Police .
+
+gtd:PoliceCheckpoint a owl:Class ;
+    rdfs:label "PoliceCheckpoint" ;
+    rdfs:isDefinedBy "24"^^xsd:int ;
+    rdfs:subClassOf gtd:Police .
+
+gtd:PolicePatrolvehiclesconvoys a owl:Class ;
+    rdfs:label "PolicePatrolvehiclesconvoys" ;
+    rdfs:isDefinedBy "23"^^xsd:int ;
+    rdfs:subClassOf gtd:Police .
+
+gtd:PoliceSecurityForcesOfficers a owl:Class ;
+    rdfs:label "PoliceSecurityForcesOfficers" ;
+    rdfs:isDefinedBy "25"^^xsd:int ;
+    rdfs:subClassOf gtd:Police .
+
+gtd:PoliticalPartyMemberRally a owl:Class ;
+    rdfs:label "PoliticalPartyMemberRally" ;
+    rdfs:isDefinedBy "84"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:PoliticianPoliticalPartyMovementMeetingRally a owl:Class ;
+    rdfs:label "PoliticianPoliticalPartyMovementMeetingRally" ;
+    rdfs:isDefinedBy "15"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:Port a owl:Class ;
+    rdfs:label "Port" ;
+    rdfs:isDefinedBy "60"^^xsd:int ;
+    rdfs:subClassOf gtd:Maritime .
+
+gtd:PostedtowebsiteblogSocialmedia a owl:Class ;
+    rdfs:label "PostedtowebsiteblogSocialmedia" ;
+    rdfs:isDefinedBy "7"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:PressureTrigger a owl:Class ;
+    rdfs:label "PressureTrigger" ;
+    rdfs:isDefinedBy "10"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:PrisonJail a owl:Class ;
+    rdfs:label "PrisonJail" ;
+    rdfs:isDefinedBy "26"^^xsd:int ;
+    rdfs:subClassOf gtd:Police .
+
+gtd:PrivateSecurityCompanyFirm a owl:Class ;
+    rdfs:label "PrivateSecurityCompanyFirm" ;
+    rdfs:isDefinedBy "13"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:ProcessionGathering a owl:Class ;
+    rdfs:label "ProcessionGathering" ;
+    rdfs:isDefinedBy "78"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Projectile a owl:Class ;
+    rdfs:label "Projectile" ;
+    rdfs:isDefinedBy "11"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:Protester a owl:Class ;
+    rdfs:label "Protester" ;
+    rdfs:isDefinedBy "83"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:PublicArea a owl:Class ;
+    rdfs:label "PublicArea" ;
+    rdfs:isDefinedBy "79"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:RaceEthnicityIdentified a owl:Class ;
+    rdfs:label "RaceEthnicityIdentified" ;
+    rdfs:isDefinedBy "71"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Radio a owl:Class ;
+    rdfs:label "Radio" ;
+    rdfs:isDefinedBy "88"^^xsd:int ;
+    rdfs:subClassOf gtd:Telecommunication .
+
+gtd:RadioJournalistStaffFacility a owl:Class ;
+    rdfs:label "RadioJournalistStaffFacility" ;
+    rdfs:isDefinedBy "54"^^xsd:int ;
+    rdfs:subClassOf gtd:JournalistsMedia .
+
+gtd:Radiological a owl:Class ;
+    rdfs:label "Radiological" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:Rally a owl:Class ;
+    rdfs:label "Rally" ;
+    rdfs:isDefinedBy "111"^^xsd:int ;
+    rdfs:subClassOf gtd:ViolentPoliticalParty .
+
+gtd:Refugee a owl:Class ;
+    rdfs:label "Refugee" ;
+    rdfs:isDefinedBy "65"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:ReligionIdentified a owl:Class ;
+    rdfs:label "ReligionIdentified" ;
+    rdfs:isDefinedBy "69"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:ReligiousFigure a owl:Class ;
+    rdfs:label "ReligiousFigure" ;
+    rdfs:isDefinedBy "85"^^xsd:int ;
+    rdfs:subClassOf gtd:ReligiousFiguresInstitutions .
+
+gtd:RemoteDevice a owl:Class ;
+    rdfs:label "RemoteDevice" ;
+    rdfs:isDefinedBy "12"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:RestaurantBarCafe a owl:Class ;
+    rdfs:label "RestaurantBarCafe" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:RetailGroceryBakery a owl:Class ;
+    rdfs:label "RetailGroceryBakery" ;
+    rdfs:isDefinedBy "7"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:RifleShotgun a owl:Class ;
+    rdfs:label "RifleShotgun" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Firearms .
+
+gtd:RopeOtherStranglingDevice a owl:Class ;
+    rdfs:label "RopeOtherStranglingDevice" ;
+    rdfs:isDefinedBy "24"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:Royalty a owl:Class ;
+    rdfs:label "Royalty" ;
+    rdfs:isDefinedBy "16"^^xsd:int ;
+    rdfs:subClassOf gtd:Government_General .
+
+gtd:SabotageEquipment a owl:Class ;
+    rdfs:label "SabotageEquipment" ;
+    rdfs:isDefinedBy "11"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:SchoolUniversityEducationalBuilding a owl:Class ;
+    rdfs:label "SchoolUniversityEducationalBuilding" ;
+    rdfs:isDefinedBy "49"^^xsd:int ;
+    rdfs:subClassOf gtd:EducationalInstitution .
+
+gtd:StateActors a owl:Class ;
+    rdfs:label "StateActors" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:AlternativeDesignation .
+
+gtd:StickyBomb a owl:Class ;
+    rdfs:label "StickyBomb" ;
+    rdfs:isDefinedBy "29"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:Student a owl:Class ;
+    rdfs:label "Student" ;
+    rdfs:isDefinedBy "70"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Subway a owl:Class ;
+    rdfs:label "Subway" ;
+    rdfs:isDefinedBy "102"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:SuccessfulRescue a owl:Class ;
+    rdfs:label "SuccessfulRescue" ;
+    rdfs:isDefinedBy "5"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:Suffocation a owl:Class ;
+    rdfs:label "Suffocation" ;
+    rdfs:isDefinedBy "26"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:Suicide a owl:Class ;
+    rdfs:label "Suicide" ;
+    rdfs:isDefinedBy "13"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:TaxiRickshaw a owl:Class ;
+    rdfs:label "TaxiRickshaw" ;
+    rdfs:isDefinedBy "105"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:TeacherProfessorInstructor a owl:Class ;
+    rdfs:label "TeacherProfessorInstructor" ;
+    rdfs:isDefinedBy "48"^^xsd:int ;
+    rdfs:subClassOf gtd:EducationalInstitution .
+
+gtd:TelephoneTelegraph a owl:Class ;
+    rdfs:label "TelephoneTelegraph" ;
+    rdfs:isDefinedBy "90"^^xsd:int ;
+    rdfs:subClassOf gtd:Telecommunication .
+
+gtd:Television a owl:Class ;
+    rdfs:label "Television" ;
+    rdfs:isDefinedBy "89"^^xsd:int ;
+    rdfs:subClassOf gtd:Telecommunication .
+
+gtd:TelevisionJournalistStaffFacility a owl:Class ;
+    rdfs:label "TelevisionJournalistStaffFacility" ;
+    rdfs:isDefinedBy "55"^^xsd:int ;
+    rdfs:subClassOf gtd:JournalistsMedia .
+
+gtd:Terrorist a owl:Class ;
+    rdfs:label "Terrorist" ;
+    rdfs:isDefinedBy "93"^^xsd:int ;
+    rdfs:subClassOf gtd:TerroristsNonStateMilitia .
+
+gtd:TimeFuse a owl:Class ;
+    rdfs:label "TimeFuse" ;
+    rdfs:isDefinedBy "14"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:TourBusVan a owl:Class ;
+    rdfs:label "TourBusVan" ;
+    rdfs:isDefinedBy "96"^^xsd:int ;
+    rdfs:subClassOf gtd:Tourists .
+
+gtd:TourismTravelAgency a owl:Class ;
+    rdfs:label "TourismTravelAgency" ;
+    rdfs:isDefinedBy "95"^^xsd:int ;
+    rdfs:subClassOf gtd:Tourists .
+
+gtd:Tourist a owl:Class ;
+    rdfs:label "Tourist" ;
+    rdfs:isDefinedBy "97"^^xsd:int ;
+    rdfs:subClassOf gtd:Tourists .
+
+gtd:TrainTracksTrolley a owl:Class ;
+    rdfs:label "TrainTracksTrolley" ;
+    rdfs:isDefinedBy "100"^^xsd:int ;
+    rdfs:subClassOf gtd:Transportation .
+
+gtd:UnarmedAssault a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:UnknownAttack a owl:Class ;
+    rdfs:label "UnknownAttack" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:UnknownClaim a owl:Class ;
+    rdfs:label "UnknownClaim" ;
+    rdfs:isDefinedBy "10"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:UnknownCompetingClaim a owl:Class ;
+    rdfs:label "UnknownCompetingClaim" ;
+    rdfs:isDefinedBy "-9"^^xsd:int ;
+    rdfs:subClassOf gtd:CompetingClaimResp .
+
+gtd:UnknownExtentDamage a owl:Class ;
+    rdfs:label "UnknownExtentDamage" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:ExtentPropertyDamage .
+
+gtd:UnknownGunType a owl:Class ;
+    rdfs:label "UnknownGunType" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:Firearms .
+
+gtd:UnknownHostageKidnapped a owl:Class ;
+    rdfs:subClassOf gtd:HostagesKidnappingStatus .
+
+gtd:UnknownKidOutcome a owl:Class ;
+    rdfs:label "UnknownKidOutcome" ;
+    rdfs:isDefinedBy "7"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:UnknownPropertyDamage a owl:Class ;
+    rdfs:label "UnknownPropertyDamage" ;
+    rdfs:isDefinedBy "-9"^^xsd:int ;
+    rdfs:subClassOf gtd:PropertyDamage .
+
+gtd:UnknownRansom a owl:Class ;
+    rdfs:subClassOf gtd:RansomStatus .
+
+gtd:UnknownTarget a owl:Class ;
+    rdfs:label "UnknownTarget" ;
+    rdfs:isDefinedBy "20"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:UnknownWeapon a owl:Class ;
+    rdfs:label "UnknownWeapon" ;
+    rdfs:isDefinedBy "13"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:UnknownWeaponType a owl:Class ;
+    rdfs:label "UnknownWeaponType" ;
+    rdfs:isDefinedBy "27"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:Vehicle a owl:Class ;
+    rdfs:label "Vehicle" ;
+    rdfs:isDefinedBy "10"^^xsd:int,
+        "15"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:VehiclesTransportation a owl:Class ;
+    rdfs:label "VehiclesTransportation" ;
+    rdfs:isDefinedBy "73"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:VillageCityTownSuburb a owl:Class ;
+    rdfs:label "VillageCityTownSuburb" ;
+    rdfs:isDefinedBy "75"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:WaterSupply a owl:Class ;
+    rdfs:label "WaterSupply" ;
+    rdfs:isDefinedBy "52"^^xsd:int ;
+    rdfs:subClassOf gtd:FoodWaterSupply .
+
+gtd:addNotes a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:approxDate a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:city a owl:DatatypeProperty,
+        owl:FunctionalProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:dbsource a owl:DatatypeProperty ;
+    rdfs:domain gtd:SourceCitation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:divertedCountry a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:hasAlternative a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:AlternativeDesignation ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasClaimMode a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:Claim ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasCompetingClaim a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:CompetingClaimResp ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasCountry a owl:ObjectProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range gtd:Country ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasHostKid a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:HostagesKidnappingStatus ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasHostKidOutcome a owl:ObjectProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range gtd:HostKidnappingOutcome ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasInclusionCriteria a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:InclusionCriteria ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasLocation a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:IncidentLocation ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasPerpGroup a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:PerpetratorGroup ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasPropertyDamage a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:PropertyDamage ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasRansom a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:RansomStatus ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasRegion a owl:ObjectProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range gtd:Region ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasSourceInfo a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:SourceCitation ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:hasTargetNation a owl:ObjectProperty ;
+    rdfs:domain gtd:Target ;
+    rdfs:range gtd:Country ;
+    rdfs:subPropertyOf gtd:hasTarget .
+
+gtd:iday a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:imonth a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:isClaimed a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:isDoubted a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean .
+
+gtd:isMultiple a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:isPerpGroupSuspected a owl:DatatypeProperty ;
+    rdfs:domain gtd:PerpetratorGroup ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf gtd:perpGroupName .
+
+gtd:isSuccessful a owl:DatatypeProperty ;
+    rdfs:domain gtd:Attack ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:isSuicidal a owl:DatatypeProperty ;
+    rdfs:domain gtd:Attack ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:iyear a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:kidhijCountry a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:latitude a owl:DatatypeProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:locationDetails a owl:DatatypeProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:longitude a owl:DatatypeProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numDays a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:numHostKid a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:numHostKidUs a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:numHours a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:numKills a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numKillsPerp a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numKillsUs a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numPerp a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numPerpCaptured a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numPerpWound a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numReleased a owl:DatatypeProperty ;
+    rdfs:domain gtd:VictimsHostageKidnapped ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf gtd:isHostKidn .
+
+gtd:numWound a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:numWoundUs a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:integer ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:perpGroupSubName a owl:DatatypeProperty ;
+    rdfs:domain gtd:PerpetratorGroup ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:perpGroupName .
+
+gtd:perpMotive a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:propDamageExtent a owl:ObjectProperty ;
+    rdfs:domain gtd:PropertyDamage ;
+    rdfs:range gtd:ExtentPropertyDamage ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:propertyDamageComment a owl:DatatypeProperty ;
+    rdfs:domain gtd:PropertyDamage ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:isPropertyDamaged .
+
+gtd:propertyDamageValue a owl:DatatypeProperty ;
+    rdfs:domain gtd:PropertyDamage ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf gtd:isPropertyDamaged .
+
+gtd:provState a owl:DatatypeProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:ramsomAmountPaidUs a owl:DatatypeProperty ;
+    rdfs:domain gtd:ExistRansom ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf gtd:isRansomPaid .
+
+gtd:ransomAmount a owl:DatatypeProperty ;
+    rdfs:domain gtd:ExistRansom ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf gtd:isRansomPaid .
+
+gtd:ransomAmountPaid a owl:DatatypeProperty ;
+    rdfs:domain gtd:ExistRansom ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf gtd:isRansomPaid .
+
+gtd:ransomAmountUs a owl:DatatypeProperty ;
+    rdfs:domain gtd:ExistRansom ;
+    rdfs:range xsd:double ;
+    rdfs:subPropertyOf gtd:isRansomPaid .
+
+gtd:ransomNote a owl:DatatypeProperty ;
+    rdfs:domain gtd:ExistRansom ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:isRansomPaid .
+
+gtd:relatedTo a owl:ObjectProperty,
+        owl:SymmetricProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range gtd:Incident .
+
+gtd:resolutionDate a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf gtd:isExtended .
+
+gtd:scite1 a owl:DatatypeProperty ;
+    rdfs:domain gtd:SourceCitation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:scite2 a owl:DatatypeProperty ;
+    rdfs:domain gtd:SourceCitation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:scite3 a owl:DatatypeProperty ;
+    rdfs:domain gtd:SourceCitation ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:summary a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:targetCorpName a owl:DatatypeProperty ;
+    rdfs:domain gtd:Target ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:targetSpecificName a owl:DatatypeProperty ;
+    rdfs:domain gtd:Target ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:vicinity a owl:DatatypeProperty ;
+    rdfs:domain gtd:IncidentLocation ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:weapDetails a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:ATTK_198812210003 a gtd:Attack,
+        gtd:BombingExplosion,
+        owl:NamedIndividual ;
+    gtd:isSuccessful "true"^^xsd:boolean ;
+    gtd:isSuicidal "false"^^xsd:boolean .
+
+gtd:ATTK_200109110004 a gtd:ArmedAssault,
+        gtd:Attack,
+        gtd:Hijacking,
+        owl:NamedIndividual ;
+    gtd:isSuccessful "true"^^xsd:boolean ;
+    gtd:isSuicidal "true"^^xsd:boolean .
+
+gtd:ArmedAssault a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:BankCommerce a owl:Class ;
+    rdfs:label "BankCommerce" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Business .
+
+gtd:BombingExplosion a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:CLAIM_200109110004 a gtd:Claim,
+        gtd:Video,
+        owl:NamedIndividual .
+
+gtd:Catastrophic a owl:Class ;
+    rdfs:label "Catastrophic" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:ExtentPropertyDamage .
+
+gtd:ExistPropertyDamage a owl:Class ;
+    rdfs:label "ExistPropertyDamage" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:PropertyDamage .
+
+gtd:GasolineAlcohol a owl:Class ;
+    rdfs:label "GasolineAlcohol" ;
+    rdfs:isDefinedBy "20"^^xsd:int ;
+    rdfs:subClassOf gtd:Incendiary .
+
+gtd:Hijacking a owl:Class ;
+    rdfs:subClassOf gtd:Attack .
+
+gtd:HosKIdOut_200109110004 a gtd:HostKidnappingOutcome,
+        gtd:HostagesKilled,
+        owl:NamedIndividual .
+
+gtd:HosKId_200109110004 a gtd:VictimsHostageKidnapped,
+        owl:NamedIndividual ;
+    gtd:hasHostKidOutcome gtd:HosKIdOut_200109110004 ;
+    gtd:numHostKid "88"^^xsd:integer ;
+    gtd:numHostKidUs "86"^^xsd:integer ;
+    gtd:numHours "1"^^xsd:integer .
+
+gtd:HostagesKilled a owl:Class ;
+    rdfs:label "HostagesKilled" ;
+    rdfs:isDefinedBy "4"^^xsd:integer ;
+    rdfs:subClassOf gtd:HostKidnappingOutcome .
+
+gtd:INCRT_198812210003 a gtd:CriterionOne,
+        gtd:CriterionThree,
+        gtd:CriterionTwo,
+        gtd:InclusionCriteria,
+        owl:NamedIndividual .
+
+gtd:INCRT_200109110004 a gtd:CriterionOne,
+        gtd:CriterionThree,
+        gtd:CriterionTwo,
+        gtd:InclusionCriteria,
+        owl:NamedIndividual .
+
+gtd:INC_200109110005 a gtd:Incident,
+        owl:NamedIndividual .
+
+gtd:INC_200109110006 a gtd:Incident,
+        owl:NamedIndividual .
+
+gtd:INC_200109110007 a gtd:Incident,
+        owl:NamedIndividual .
+
+gtd:KnifeOtherSharpObject a owl:Class ;
+    rdfs:label "KnifeOtherSharpObject" ;
+    rdfs:isDefinedBy "23"^^xsd:int ;
+    rdfs:subClassOf gtd:Melee .
+
+gtd:LOC_198812210003 a gtd:IncidentLocation,
+        gtd:OccurredCityvillagetownLatlong,
+        owl:NamedIndividual ;
+    gtd:city "Lockerbie" ;
+    gtd:hasCountry gtd:United_Kingdom ;
+    gtd:hasRegion gtd:Western_Europe ;
+    gtd:latitude "55.120154"^^xsd:double ;
+    gtd:longitude "-3.355942"^^xsd:double ;
+    gtd:provState "Scotland" ;
+    gtd:vicinity "false"^^xsd:boolean .
+
+gtd:LOC_200109110004 a gtd:IncidentLocation,
+        gtd:OccurredCityvillagetownLatlong,
+        owl:NamedIndividual ;
+    gtd:city "New York City" ;
+    gtd:hasCountry gtd:United_States ;
+    gtd:hasRegion gtd:north_America ;
+    gtd:latitude "40.697132"^^xsd:double ;
+    gtd:longitude "-73.931351"^^xsd:double ;
+    gtd:provState "New York" ;
+    gtd:vicinity "false"^^xsd:boolean .
+
+gtd:PERPGR_200109110004 a gtd:PerpetratorGroup,
+        owl:NamedIndividual ;
+    gtd:isPerpGroupSuspected "false"^^xsd:boolean ;
+    gtd:perpGroupName "Al-Qaida" .
+
+gtd:PRP_200109110004 a gtd:Catastrophic,
+        gtd:ExistPropertyDamage,
+        gtd:PropertyDamage,
+        owl:NamedIndividual ;
+    gtd:propertyDamageComment "The crash resulted in the destruction of an American Airlines Boeing 767 aircraft. All personal belongings stowed on the plane were destroyed as well. Also destroyed was the North Tower of the World Trade Center complex in New York City, which collapsed as a result of the impact and subsequent fire. The building's collapse undoubtedly damaged the foundation of nearby buildings, though the South Tower had already fallen. Businesses located in the North Tower suffered massive economic losses. Air travel was restricted or prevented in the United States for several months following the attacks. Total losses to the United States Airline industry are unknown, but extremely high. Several major United States airlines were nearly bankrupted in the aftermath of the attacks. The attacks had a negative impact on the U.S. and world economy." .
+
+gtd:SRCCT_200109110004 a gtd:SourceCitation,
+        owl:NamedIndividual ;
+    gtd:dbsource "CETIS" ;
+    gtd:scite1 "United States Government, The 9/11 Commission Report: Final Report of the National Commission on Terrorist Attacks Upon the United States. Washington, DC: Government Printing Office, 2004." ;
+    gtd:scite2 "Lindsay Kines, “United States on high alert after thousands feared dead: Airlines initially blame hijackers for attacks on the Pentagon in Washington, New York's World Trade Center,” The Vancouver Sun, September 11, 2001." ;
+    gtd:scite3 "Joe Frolick, “Hijackers Ram Two Airliners Into World Trade Center, Third Plane Slams Into Pentagon, Fourth Crashes Near Pittsburgh; Thousands Die; Bush Vows Swift Revenge,” The Plain Dealer, September 12, 2001." .
+
+gtd:TRGT_198812210003 a gtd:Aircraft,
+        gtd:AirportsAircraft,
+        gtd:Target,
+        owl:NamedIndividual ;
+    gtd:hasTargetNation gtd:United_States ;
+    gtd:targetCorpName "Pan American Airlines" ;
+    gtd:targetSpecificName "Boeing 747 Aircraft" .
+
+gtd:TRGT_200109110004_1 a gtd:PrivateCitizensProperty,
+        gtd:Target,
+        gtd:UnnamedCivilianUnspecified,
+        owl:NamedIndividual ;
+    gtd:hasTargetNation gtd:United_States ;
+    gtd:targetCorpName "Civilians" ;
+    gtd:targetSpecificName "Passengers and crew members on American Airlines Flight 11 and the people working in the North Tower of the World Trade Center in New York City" .
+
+gtd:TRGT_200109110004_2 a gtd:BankCommerce,
+        gtd:Business,
+        gtd:Target,
+        owl:NamedIndividual ;
+    gtd:hasTargetNation gtd:United_States ;
+    gtd:targetCorpName "World Trade Center Complex" ;
+    gtd:targetSpecificName "Businesses operating inside the Twin Towers" .
+
+gtd:TRGT_200109110004_3 a gtd:Aircraft,
+        gtd:AirportsAircraft,
+        gtd:Target,
+        owl:NamedIndividual ;
+    gtd:hasTargetNation gtd:United_States ;
+    gtd:targetCorpName "American Airlines" ;
+    gtd:targetSpecificName "American Airlines-owned Boeing 767 passenger jet aircraft" .
+
+gtd:United_Kingdom a gtd:Country,
+        owl:NamedIndividual .
+
+gtd:UnknownExplosiveType a owl:Class ;
+    rdfs:label "UnknownExplosiveType" ;
+    rdfs:isDefinedBy "16"^^xsd:int ;
+    rdfs:subClassOf gtd:Explosives .
+
+gtd:UnnamedCivilianUnspecified a owl:Class ;
+    rdfs:label "UnnamedCivilianUnspecified" ;
+    rdfs:isDefinedBy "67"^^xsd:int ;
+    rdfs:subClassOf gtd:PrivateCitizensProperty .
+
+gtd:Vehicles a owl:Class ;
+    rdfs:label "Vihichles (not to include vehicle-borne explosives)" ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:Video a owl:Class ;
+    rdfs:label "Video" ;
+    rdfs:isDefinedBy "6"^^xsd:int ;
+    rdfs:subClassOf gtd:Claim .
+
+gtd:WPN_198812210003 a gtd:Explosives,
+        gtd:UnknownExplosiveType,
+        gtd:Weapon,
+        owl:NamedIndividual .
+
+gtd:WPN_200109110004_1 a gtd:Vehicles,
+        gtd:Weapon,
+        owl:NamedIndividual .
+
+gtd:WPN_200109110004_2 a gtd:GasolineAlcohol,
+        gtd:Incendiary,
+        gtd:Weapon,
+        owl:NamedIndividual .
+
+gtd:WPN_200109110004_3 a gtd:KnifeOtherSharpObject,
+        gtd:Melee,
+        gtd:Weapon,
+        owl:NamedIndividual .
+
+gtd:Western_Europe a gtd:Region,
+        owl:NamedIndividual .
+
+gtd:hasAttackType a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range genid:771d2eacb79fef2502d03d1c83f5bc19 ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:isExtended a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean .
+
+gtd:north_America a gtd:Region,
+        owl:NamedIndividual .
+
+genid:18053337ad61fac85ff5a8157faece01 a owl:Restriction ;
+    owl:maxQualifiedCardinality "4"^^xsd:nonNegativeInteger ;
+    owl:onClass gtd:Target ;
+    owl:onProperty gtd:hasTarget .
+
+genid:2b420f8b0d472b8fdf1dec5944e647e2 a owl:Restriction ;
+    owl:maxQualifiedCardinality "4"^^xsd:nonNegativeInteger ;
+    owl:onClass gtd:Weapon ;
+    owl:onProperty gtd:usedWeapon .
+
+genid:771d2eacb79fef2502d03d1c83f5bc19 a owl:Restriction ;
+    owl:maxQualifiedCardinality "3"^^xsd:nonNegativeInteger ;
+    owl:onClass gtd:Attack ;
+    owl:onProperty gtd:hasAttackType .
+
+genid:ef5f76ad1ad49c41725854d2fef3de81 a owl:Restriction ;
+    owl:maxQualifiedCardinality "4"^^xsd:nonNegativeInteger ;
+    owl:onClass gtd:Weapon ;
+    owl:onProperty gtd:usedWeapon .
+
+gtd:AbortionRelated a owl:Class ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Aircraft a owl:Class ;
+    rdfs:label "Aircraft" ;
+    rdfs:isDefinedBy "42"^^xsd:int ;
+    rdfs:subClassOf gtd:AirportsAircraft .
+
+gtd:Chemical a owl:Class ;
+    rdfs:label "Chemical" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:CriterionOne a owl:Class ;
+    rdfs:label "CriterionOne" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:InclusionCriteria .
+
+gtd:CriterionThree a owl:Class ;
+    rdfs:label "CriterionThree" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:InclusionCriteria .
+
+gtd:CriterionTwo a owl:Class ;
+    rdfs:label "CriterionTwo" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:InclusionCriteria .
+
+gtd:FoodWaterSupply a owl:Class ;
+    rdfs:label "FoodWaterSupply" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:NGO a owl:Class ;
+    rdfs:label "NGO" ;
+    rdfs:isDefinedBy "12"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:OccurredCityvillagetownLatlong a owl:Class ;
+    rdfs:label "OccurredCityvillagetownLatlong" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Specificity .
+
+gtd:TerroristsNonStateMilitia a owl:Class ;
+    rdfs:label "TerroristsNonStateMilitia" ;
+    rdfs:isDefinedBy "17"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:hasTarget a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range genid:18053337ad61fac85ff5a8157faece01 ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:isPropertyDamaged a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:perpGroupName a owl:DatatypeProperty ;
+    rdfs:domain gtd:PerpetratorGroup ;
+    rdfs:range xsd:string ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:usedWeapon a owl:ObjectProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range genid:2b420f8b0d472b8fdf1dec5944e647e2 ;
+    rdfs:subPropertyOf owl:topObjectProperty .
+
+gtd:EducationalInstitution a owl:Class ;
+    rdfs:label "EducationalInstitution" ;
+    rdfs:isDefinedBy "8"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Government_Diplomatic a owl:Class ;
+    rdfs:label "Government_Diplomatic" ;
+    rdfs:isDefinedBy "7"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:OtherTarget a owl:Class ;
+    rdfs:label "OtherTarget" ;
+    rdfs:isDefinedBy "13"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Region a owl:Class ;
+    rdfs:label "Region" .
+
+gtd:ReligiousFiguresInstitutions a owl:Class ;
+    rdfs:label "ReligiousFiguresInstitutions" ;
+    rdfs:isDefinedBy "15"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Utilities a owl:Class ;
+    rdfs:label "Utilities" ;
+    rdfs:isDefinedBy "21"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:ViolentPoliticalParty a owl:Class ;
+    rdfs:label "ViolentPoliticalParty" ;
+    rdfs:isDefinedBy "22"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:CompetingClaimResp a owl:Class ;
+    rdfs:label "CompetingClaimResp" .
+
+gtd:Country a owl:Class ;
+    rdfs:label "Country" .
+
+gtd:HostagesKidnappingStatus a owl:Class ;
+    rdfs:label "HostagesKidnappingVictims" .
+
+gtd:Incendiary a owl:Class ;
+    rdfs:label "Incendiary" ;
+    rdfs:isDefinedBy "8"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:JournalistsMedia a owl:Class ;
+    rdfs:label "JournalistsMedia" ;
+    rdfs:isDefinedBy "10"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Maritime a owl:Class ;
+    rdfs:label "Maritime" ;
+    rdfs:isDefinedBy "11"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:RansomStatus a owl:Class ;
+    rdfs:label "RansomStatus" .
+
+gtd:Tourists a owl:Class ;
+    rdfs:label "Tourists" ;
+    rdfs:isDefinedBy "18"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:AirportsAircraft a owl:Class ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:ExistRansom a owl:Class ;
+    rdfs:subClassOf gtd:RansomStatus .
+
+gtd:ExtentPropertyDamage a owl:Class ;
+    rdfs:label "ExtentPropertyDamage" .
+
+gtd:Firearms a owl:Class ;
+    rdfs:label "Firearms" ;
+    rdfs:isDefinedBy "5"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:PerpetratorGroup a owl:Class ;
+    rdfs:label "PerpetratorGroupSuspected" .
+
+gtd:Police a owl:Class ;
+    rdfs:label "Police" ;
+    rdfs:isDefinedBy "3"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Specificity a owl:Class ;
+    rdfs:label "Specificity" .
+
+gtd:Telecommunication a owl:Class ;
+    rdfs:label "Telecommunication" ;
+    rdfs:isDefinedBy "16"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:United_States a gtd:Country,
+        owl:NamedIndividual ;
+    rdfs:label "United States" ;
+    rdfs:isDefinedBy "217"^^xsd:integer .
+
+gtd:isRansomPaid a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:AlternativeDesignation a owl:Class ;
+    rdfs:label "AlternativeDesignation" .
+
+gtd:InclusionCriteria a owl:Class ;
+    rdfs:label "InclusionCriteria" .
+
+gtd:SourceCitation a owl:Class ;
+    rdfs:label "SourceCitation" .
+
+gtd:Melee a owl:Class ;
+    rdfs:label "Melee" ;
+    rdfs:isDefinedBy "9"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+gtd:Transportation a owl:Class ;
+    rdfs:label "Transportation" ;
+    rdfs:isDefinedBy "19"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:isHostKidn a owl:DatatypeProperty ;
+    rdfs:domain gtd:Incident ;
+    rdfs:range xsd:boolean ;
+    rdfs:subPropertyOf owl:topDataProperty .
+
+gtd:Government_General a owl:Class ;
+    rdfs:label "Government_General" ;
+    rdfs:isDefinedBy "2"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:PropertyDamage a owl:Class ;
+    rdfs:label "PropertyDamageStatus" .
+
+gtd:HostKidnappingOutcome a owl:Class ;
+    rdfs:label "HostKidnappingOutcome" .
+
+gtd:VictimsHostageKidnapped a owl:Class ;
+    rdfs:subClassOf gtd:HostagesKidnappingStatus .
+
+gtd:IncidentLocation a owl:Class ;
+    rdfs:label "IncidentLocation" .
+
+gtd:Claim a owl:Class ;
+    rdfs:label "Claim" .
+
+gtd:Military a owl:Class ;
+    rdfs:label "Military" ;
+    rdfs:isDefinedBy "4"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Attack a owl:Class ;
+    rdfs:label "Attack" .
+
+gtd:Business a owl:Class ;
+    rdfs:label "Business" ;
+    rdfs:isDefinedBy "1"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Explosives a owl:Class ;
+    rdfs:label "Explosives" ;
+    rdfs:isDefinedBy "6"^^xsd:int ;
+    rdfs:subClassOf gtd:Weapon .
+
+owl:topObjectProperty rdfs:domain gtd:Incident ;
+    rdfs:range genid:ef5f76ad1ad49c41725854d2fef3de81 .
+
+gtd:Weapon a owl:Class ;
+    rdfs:label "Weapon" .
+
+gtd:PrivateCitizensProperty a owl:Class ;
+    rdfs:label "PrivateCitizensProperty" ;
+    rdfs:isDefinedBy "14"^^xsd:int ;
+    rdfs:subClassOf gtd:Target .
+
+gtd:Target a owl:Class ;
+    rdfs:label "Target" .
+
+gtd:Incident a owl:Class ;
+    rdfs:label "Incident" .
+

@@ -1,0 +1,538 @@
+# Derived graph schema; semantic alignments are explicitly proposed.
+id: https://example.org/graphrag/gtd/neo4j-schema
+name: gtd_neo4j
+title: GTD Neo4j graph model
+description: Structural LinkML representation of schema-inventory.json, derived from the independent GTD
+  Cypher import. Neo4j annotations are local conventions; no GTDOnto alignment is asserted.
+prefixes:
+  linkml: https://w3id.org/linkml/
+  gtd_graph: https://example.org/graphrag/gtd/neo4j-schema/
+  gtd: http://www.semanticweb.org/user/ontologies/2020/3/GTDB#
+default_prefix: gtd_graph
+imports:
+- linkml:types
+default_range: string
+see_also:
+- https://gist.github.com/rvanbruggen/0a9f607b1b2647e6ea3b
+comments:
+- The example.org namespace identifies this local derived schema; it is not a published ontology namespace.
+- Unspecified property types use AnyValue rather than guessing a datatype.
+- Properties are optional; no identifiers or uniqueness constraints are inferred.
+- Relationship slots allow zero or more targets as a permissive modeling choice, not a verified cardinality.
+- Relationship values are class-valued objects; database lookup and reference serialization require a
+  separate adapter and identifier policy.
+- Neo4j annotations preserve labels, property names, relationship types, endpoints and directions; LinkML
+  does not execute them.
+- Types describe the actual import expressions, not intended GTD semantics. LOAD CSV values remain strings
+  unless converted.
+- No cardinality or uniqueness constraints are inferred.
+- Weapon represents a GTD weapon-type category in this import.
+- Ontology mappings have not been established.
+annotations:
+  derived_from: schema-inventory.json
+  mapping_status: proposed alignments embedded in classes/slots
+classes:
+  AnyValue:
+    class_uri: linkml:Any
+    description: An unconstrained value for properties whose types are unspecified in the source inventory.
+  AttackType:
+    description: Node with Neo4j label AttackType.
+    annotations:
+      neo4j_label: AttackType
+      mapping_status: proposed
+      mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+      mapping_note: Attack is used in the ontology attack-type hierarchy; category alignment requires
+        review.
+    attributes:
+      id:
+        description: Neo4j property AttackType.id.
+        range: AnyValue
+        annotations:
+          neo4j_property: id
+          type_from_import: unspecified
+      name:
+        description: Neo4j property AttackType.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+    close_mappings:
+    - gtd:Attack
+  City:
+    description: Node with Neo4j label City.
+    annotations:
+      neo4j_label: City
+    attributes:
+      name:
+        description: Neo4j property City.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+      part_of_provstate:
+        description: Outgoing PART_OF relationship from City to ProvState.
+        range: ProvState
+        multivalued: true
+        annotations:
+          neo4j_relationship: PART_OF
+          neo4j_direction: outgoing
+          neo4j_source_label: City
+          neo4j_target_label: ProvState
+          cardinality_status: unspecified; zero or more permitted
+  Corporation:
+    description: Node with Neo4j label Corporation.
+    annotations:
+      neo4j_label: Corporation
+    attributes:
+      name:
+        description: Neo4j property Corporation.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+      related_to_target:
+        description: Outgoing RELATED_TO relationship from Corporation to Target.
+        range: Target
+        multivalued: true
+        annotations:
+          neo4j_relationship: RELATED_TO
+          neo4j_direction: outgoing
+          neo4j_source_label: Corporation
+          neo4j_target_label: Target
+          cardinality_status: unspecified; zero or more permitted
+  Country:
+    description: Node with Neo4j label Country.
+    annotations:
+      neo4j_label: Country
+    attributes:
+      id:
+        description: Neo4j property Country.id.
+        range: AnyValue
+        annotations:
+          neo4j_property: id
+          type_from_import: unspecified
+      name:
+        description: Neo4j property Country.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+      part_of_region:
+        description: Outgoing PART_OF relationship from Country to Region.
+        range: Region
+        multivalued: true
+        annotations:
+          neo4j_relationship: PART_OF
+          neo4j_direction: outgoing
+          neo4j_source_label: Country
+          neo4j_target_label: Region
+          cardinality_status: unspecified; zero or more permitted
+  Event:
+    description: Node with Neo4j label Event.
+    annotations:
+      neo4j_label: Event
+      mapping_status: proposed
+      mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+      mapping_note: Incident-to-Event alignment proposed for testing; not published by either author.
+    attributes:
+      id:
+        description: Neo4j property Event.id.
+        range: integer
+        annotations:
+          neo4j_property: id
+          type_from_import: integer
+      year:
+        description: Neo4j property Event.year.
+        range: integer
+        annotations:
+          neo4j_property: year
+          type_from_import: integer
+      month:
+        description: Neo4j property Event.month.
+        range: integer
+        annotations:
+          neo4j_property: month
+          type_from_import: integer
+      day:
+        description: Neo4j property Event.day.
+        range: integer
+        annotations:
+          neo4j_property: day
+          type_from_import: integer
+      latitude:
+        description: Neo4j property Event.latitude.
+        range: string
+        annotations:
+          neo4j_property: latitude
+          type_from_import: string
+      longitude:
+        description: Neo4j property Event.longitude.
+        range: string
+        annotations:
+          neo4j_property: longitude
+          type_from_import: string
+      specificity:
+        description: Neo4j property Event.specificity.
+        range: string
+        annotations:
+          neo4j_property: specificity
+          type_from_import: string
+      vicinity:
+        description: Neo4j property Event.vicinity.
+        range: string
+        annotations:
+          neo4j_property: vicinity
+          type_from_import: string
+      location:
+        description: Neo4j property Event.location.
+        range: string
+        annotations:
+          neo4j_property: location
+          type_from_import: string
+      summary:
+        description: Neo4j property Event.summary.
+        range: string
+        annotations:
+          neo4j_property: summary
+          type_from_import: string
+      crit1:
+        description: Neo4j property Event.crit1.
+        range: integer
+        annotations:
+          neo4j_property: crit1
+          type_from_import: integer
+      crit2:
+        description: Neo4j property Event.crit2.
+        range: integer
+        annotations:
+          neo4j_property: crit2
+          type_from_import: integer
+      crit3:
+        description: Neo4j property Event.crit3.
+        range: integer
+        annotations:
+          neo4j_property: crit3
+          type_from_import: integer
+      doubt:
+        description: Neo4j property Event.doubt.
+        range: integer
+        annotations:
+          neo4j_property: doubt
+          type_from_import: integer
+      alternative:
+        description: Neo4j property Event.alternative.
+        range: string
+        annotations:
+          neo4j_property: alternative
+          type_from_import: string
+      multiple:
+        description: Neo4j property Event.multiple.
+        range: integer
+        annotations:
+          neo4j_property: multiple
+          type_from_import: integer
+      success:
+        description: Neo4j property Event.success.
+        range: integer
+        annotations:
+          neo4j_property: success
+          type_from_import: integer
+      suicide:
+        description: Neo4j property Event.suicide.
+        range: integer
+        annotations:
+          neo4j_property: suicide
+          type_from_import: integer
+      motive:
+        description: Neo4j property Event.motive.
+        range: string
+        annotations:
+          neo4j_property: motive
+          type_from_import: string
+      weapondetail:
+        description: Neo4j property Event.weapondetail.
+        range: string
+        annotations:
+          neo4j_property: weapondetail
+          type_from_import: string
+      nkill:
+        description: Neo4j property Event.nkill.
+        range: string
+        annotations:
+          neo4j_property: nkill
+          type_from_import: string
+      nkillter:
+        description: Neo4j property Event.nkillter.
+        range: string
+        annotations:
+          neo4j_property: nkillter
+          type_from_import: string
+      nwound:
+        description: Neo4j property Event.nwound.
+        range: string
+        annotations:
+          neo4j_property: nwound
+          type_from_import: string
+      nwoundter:
+        description: Neo4j property Event.nwoundter.
+        range: string
+        annotations:
+          neo4j_property: nwoundter
+          type_from_import: string
+      property:
+        description: Neo4j property Event.property.
+        range: string
+        annotations:
+          neo4j_property: property
+          type_from_import: string
+      propextent:
+        description: Neo4j property Event.propextent.
+        range: string
+        annotations:
+          neo4j_property: propextent
+          type_from_import: string
+      propextent_txt:
+        description: Neo4j property Event.propextent_txt.
+        range: string
+        annotations:
+          neo4j_property: propextent_txt
+          type_from_import: string
+      propvalue:
+        description: Neo4j property Event.propvalue.
+        range: string
+        annotations:
+          neo4j_property: propvalue
+          type_from_import: string
+      propcomment:
+        description: Neo4j property Event.propcomment.
+        range: string
+        annotations:
+          neo4j_property: propcomment
+          type_from_import: string
+      ransom:
+        description: Neo4j property Event.ransom.
+        range: integer
+        annotations:
+          neo4j_property: ransom
+          type_from_import: integer
+      ransomamt:
+        description: Neo4j property Event.ransomamt.
+        range: integer
+        annotations:
+          neo4j_property: ransomamt
+          type_from_import: integer
+      ransomnote:
+        description: Neo4j property Event.ransomnote.
+        range: string
+        annotations:
+          neo4j_property: ransomnote
+          type_from_import: string
+      addnotes:
+        description: Neo4j property Event.addnotes.
+        range: string
+        annotations:
+          neo4j_property: addnotes
+          type_from_import: string
+      dbsource:
+        description: Neo4j property Event.dbsource.
+        range: string
+        annotations:
+          neo4j_property: dbsource
+          type_from_import: string
+      event_located_in_city:
+        description: Outgoing EVENT_LOCATED_IN relationship from Event to City.
+        range: City
+        multivalued: true
+        annotations:
+          neo4j_relationship: EVENT_LOCATED_IN
+          neo4j_direction: outgoing
+          neo4j_source_label: Event
+          neo4j_target_label: City
+          cardinality_status: unspecified; zero or more permitted
+      is_of_attacktype_attacktype:
+        description: Outgoing IS_OF_ATTACKTYPE relationship from Event to AttackType.
+        range: AttackType
+        multivalued: true
+        annotations:
+          neo4j_relationship: IS_OF_ATTACKTYPE
+          neo4j_direction: outgoing
+          neo4j_source_label: Event
+          neo4j_target_label: AttackType
+          cardinality_status: unspecified; zero or more permitted
+          mapping_status: proposed
+          mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+          mapping_note: The ontology range uses a skolemized OWL expression; do not assume direct equivalence.
+        related_mappings:
+        - gtd:hasAttackType
+      targets_target:
+        description: Outgoing TARGETS relationship from Event to Target.
+        range: Target
+        multivalued: true
+        annotations:
+          neo4j_relationship: TARGETS
+          neo4j_direction: outgoing
+          neo4j_source_label: Event
+          neo4j_target_label: Target
+          cardinality_status: unspecified; zero or more permitted
+          mapping_status: proposed
+          mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+          mapping_note: Ontology target categorization and graph named targets differ; this is a provisional
+            association.
+        related_mappings:
+        - gtd:hasTarget
+      used_weapon_weapon:
+        description: Outgoing USED_WEAPON relationship from Event to Weapon.
+        range: Weapon
+        multivalued: true
+        annotations:
+          neo4j_relationship: USED_WEAPON
+          neo4j_direction: outgoing
+          neo4j_source_label: Event
+          neo4j_target_label: Weapon
+          cardinality_status: unspecified; zero or more permitted
+          mapping_status: proposed
+          mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+          mapping_note: Provisional property-to-edge alignment.
+        related_mappings:
+        - gtd:usedWeapon
+    close_mappings:
+    - gtd:Incident
+  Group:
+    description: Node with Neo4j label Group.
+    annotations:
+      neo4j_label: Group
+      mapping_status: proposed
+      mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+      mapping_note: Proposed perpetrator-group representation.
+    attributes:
+      name:
+        description: Neo4j property Group.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+      carries_out_event:
+        description: Outgoing CARRIES_OUT relationship from Group to Event.
+        range: Event
+        multivalued: true
+        annotations:
+          neo4j_relationship: CARRIES_OUT
+          neo4j_direction: outgoing
+          neo4j_source_label: Group
+          neo4j_target_label: Event
+          cardinality_status: unspecified; zero or more permitted
+          mapping_status: proposed
+          mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+          mapping_note: Graph edge points Group to Event, opposite the ontology Incident-to-group property.
+        related_mappings:
+        - gtd:hasPerpGroup
+    close_mappings:
+    - gtd:PerpetratorGroup
+  ProvState:
+    description: Node with Neo4j label ProvState.
+    annotations:
+      neo4j_label: ProvState
+    attributes:
+      name:
+        description: Neo4j property ProvState.name.
+        range: string
+        annotations:
+          neo4j_property: name
+          type_from_import: string
+      part_of_country:
+        description: Outgoing PART_OF relationship from ProvState to Country.
+        range: Country
+        multivalued: true
+        annotations:
+          neo4j_relationship: PART_OF
+          neo4j_direction: outgoing
+          neo4j_source_label: ProvState
+          neo4j_target_label: Country
+          cardinality_status: unspecified; zero or more permitted
+  Region:
+    description: Node with Neo4j label Region.
+    annotations:
+      neo4j_label: Region
+    attributes:
+      id:
+        description: Neo4j property Region.id.
+        range: AnyValue
+        annotations:
+          neo4j_property: id
+          type_from_import: unspecified
+      name:
+        description: Neo4j property Region.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+  Target:
+    description: Node with Neo4j label Target.
+    annotations:
+      neo4j_label: Target
+    attributes:
+      name:
+        description: Neo4j property Target.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+      is_a_targettype:
+        description: Outgoing IS_A relationship from Target to TargetType.
+        range: TargetType
+        multivalued: true
+        annotations:
+          neo4j_relationship: IS_A
+          neo4j_direction: outgoing
+          neo4j_source_label: Target
+          neo4j_target_label: TargetType
+          cardinality_status: unspecified; zero or more permitted
+      is_from_country:
+        description: Outgoing IS_FROM relationship from Target to Country.
+        range: Country
+        multivalued: true
+        annotations:
+          neo4j_relationship: IS_FROM
+          neo4j_direction: outgoing
+          neo4j_source_label: Target
+          neo4j_target_label: Country
+          cardinality_status: unspecified; zero or more permitted
+  TargetType:
+    description: Node with Neo4j label TargetType.
+    annotations:
+      neo4j_label: TargetType
+    attributes:
+      id:
+        description: Neo4j property TargetType.id.
+        range: AnyValue
+        annotations:
+          neo4j_property: id
+          type_from_import: unspecified
+      name:
+        description: Neo4j property TargetType.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+  Weapon:
+    description: GTD weapon-type category, not an individual physical weapon.
+    annotations:
+      neo4j_label: Weapon
+      mapping_status: proposed
+      mapping_provenance: Local GTDOnto/GTD Cypher comparison for integration testing, 2026-10-12
+      mapping_note: Both models organize weapon categories; exact coverage requires review.
+    attributes:
+      id:
+        description: Neo4j property Weapon.id.
+        range: AnyValue
+        annotations:
+          neo4j_property: id
+          type_from_import: unspecified
+      name:
+        description: Neo4j property Weapon.name.
+        range: AnyValue
+        annotations:
+          neo4j_property: name
+          type_from_import: unspecified
+    close_mappings:
+    - gtd:Weapon
