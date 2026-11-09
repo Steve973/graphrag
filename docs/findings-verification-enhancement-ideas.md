@@ -177,7 +177,8 @@ scoring criterion-related information to assist with satisfaction and completene
 # Other Items To Check
 
 There are some other items to discuss that are separate from the enhancements mentioned above. These are items to check
-against the current implementation and consider as additions.
+against the current implementation and consider as additions. When writing this, I am not entirely sure of the current 
+implementation details, so we should discuss any inconsistencies before work is carried out.
 
 ## 1. Findings types
 
@@ -240,3 +241,31 @@ done, while the resolution status indicates whether the deficiency has been reso
 outstanding. Consider whether these distinctions can be represented and tracked using existing workflow state, and
 whether they provide enough information to avoid repeating unsuccessful corrective actions or reopening work that has
 already been satisfactorily addressed.
+
+## 3. Deferred criterion instances
+
+Determine the precise conditions under which a criterion may be deferred, including whether deferral represents an 
+unresolved dependency, a requirement for further decomposition, or work that must cross a stage boundary. Establish 
+which corrective or additional operations belong within the current acquisition or findings invocation, and which 
+require another planning cycle. Ensure that deferred criteria preserve their outstanding requirements and the reasons 
+for deferral so subsequent planning can act on them without repeating completed work.
+
+Consider the following table:
+
+| Situation | Appropriate handling |
+|---|---|
+| Acquisition query needs refinement or another retrieval attempt | Current acquisition invocation |
+| Additional retrieval is needed to satisfy an existing acquisition criterion | Current acquisition invocation |
+| Existing evidence needs further analysis, synthesis, or screening | Current findings invocation |
+| Additional local criteria are needed within acquisition or findings | Current subgraph, using its existing proposal/review mechanism |
+| Findings reveal a need for additional graph evidence | Overall review, then planning in the next iteration |
+| A criterion requires substantial decomposition into new dependent research requirements | ADaPT-style breakdown through planning in the next iteration |
+| A criterion cannot be satisfied because evidence is unavailable | Record the limitation; determine whether further work is viable |
+
+Examine whether a criterion's atomic statement is genuinely atomic when it cannot be satisfied through the existing 
+acquisition or processing mechanisms. If establishing the statement requires resolving subordinate questions or 
+previously unrecognized dependencies, consider whether ADaPT-style decomposition is appropriate. Determine when such 
+decomposition should trigger deferral and another planning iteration, rather than continued attempts to satisfy the 
+statement within the current iteration. When an atomic statement is decomposed, it follows the promotion logic, and the 
+atomic statement is satisfied when the promoted criterion is satisfied. If the remaining statements of the original 
+criterion are already satisfied, now that criterion is also satisfied.
