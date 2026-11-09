@@ -88,8 +88,8 @@ further work.
 
 ## 5. Consider whether an adversarial review is necessary after findings have been established
 
-If we accept or reject findings based on faithfulness scores, and if we evaluate the groundedness of the criterion as a
-whole using the accepted findings (assuming that this approach is adopted), then the current findings-stage adversarial
+If we accept/reject findings based on faithfulness scores, and evaluate the groundedness of the criterion "as a whole" 
+using the accepted findings (assuming that this approach is adopted), then the current findings-stage adversarial
 review may not be necessary. It may not provide significant additional value over what has already been established
 through these evaluations.
 
@@ -171,3 +171,72 @@ This is the only prescriptive portion of this document.
 
 Satisfaction and completeness of a criterion is not determined by Ragas evaluation. Ragas evaluation is a method of
 scoring criterion-related information to assist with satisfaction and completeness determination.
+
+---
+
+# Other Items To Check
+
+There are some other items to discuss that are separate from the enhancements mentioned above. These are items to check
+against the current implementation and consider as additions.
+
+## 1. Findings types
+
+Findings might not always indicate support for a criterion's atomic statement. Evidence could lead to a finding that
+indicates a contradiction, even when other evidence leads to a finding that indicates support. Both findings could be
+valid and independently verified, since a finding being faithful to its evidence does not necessarily mean that other
+evidence cannot contradict it. Consider the following table for possible findings types:
+
+| Finding type | Evidence role |
+|------------------------|--------------------------------------------------------------------------------|
+| SUPPORTS | provides affirmative support for the assertion |
+| CONTRADICTS | supports a conclusion inconsistent with the assertion |
+| QUALIFIES | adds conditions/exceptions to, or narrows, the assertion |
+| PARTIAL | establishes some portion of the assertion but not everything it claims |
+| CONTEXTUALIZES | informs interpretation of the assertion without supporting or contradicting it |
+| CHALLENGES | raises a specific concern about the validity or reliability of the assertion |
+
+If we modify findings to specify these types, we will also need to determine how to handle types other than `SUPPORTS`
+in the workflow. For example, how should an atomic assertion be assessed when it has both a `SUPPORTS` finding and a
+`CONTRADICTS` finding? The presence of contradictory findings does not necessarily indicate a deficiency in the findings
+or verification process. Both findings might be adequately grounded in their respective evidence, and the contradiction
+may represent a legitimate inconsistency in the available information rather than something that needs to be corrected.
+
+Examine whether multiple findings associated with the same atomic assertion can independently support, contradict,
+qualify, or otherwise inform the assessment of that assertion. When conflicting evidence is discovered, the system 
+should be able to retain the findings, preserve their provenance, explicitly represent the contradiction, and determine 
+whether previously accepted findings require reassessment. The criterion assessment should consider the combined 
+implications of all accepted findings rather than treating each finding independently as sufficient to establish the 
+assertion. Determine whether the existing findings processing and overall review mechanisms can adequately handle these 
+situations, including unresolved contradictions, without requiring additional review mechanisms.
+
+## 2. Deficiency dispositions
+
+While a deficiency identifies what is incorrect, missing, etc., it should have a disposition that indicates how that
+deficiency should be handled. For example:
+
+- an assertion might be unsupported by its referenced evidence
+- its evidence selection might be incomplete
+- its supporting finding might fail verification
+
+Those situations potentially require different corrective actions, rather than treating every failed verification as a 
+generic rejection.
+
+Examine whether the findings verification process distinguishes different types of deficiencies and produces actionable
+outcomes. Determine whether existing mechanisms can appropriately handle them through:
+
+- evidence reselection
+- additional processing of existing evidence
+- further acquisition
+- finding correction
+- criterion revision
+- recording an unresolved limitation
+
+The disposition should identify the corrective action appropriate to the deficiency and allow the workflow to route that 
+work to the responsible mechanism without requiring another adversarial LLM review when the verification result already 
+provides sufficient information.
+
+Also distinguish the disposition of a deficiency from its resolution status. The disposition identifies what should be
+done, while the resolution status indicates whether the deficiency has been resolved, rejected as invalid, or remains
+outstanding. Consider whether these distinctions can be represented and tracked using existing workflow state, and
+whether they provide enough information to avoid repeating unsuccessful corrective actions or reopening work that has
+already been satisfactorily addressed.
