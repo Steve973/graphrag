@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "question_id": "graphrag_author_count_manual",
+    "question": "Which authors published the most papers on feline cardiomyopathy?",
+    "tokens": [
+      "Which",
+      "authors",
+      "published",
+      "the",
+      "most",
+      "papers",
+      "on",
+      "feline",
+      "cardiomyopathy",
+      "?",
+      "[RSC]",
+      "[DUP]",
+      "[DUM]"
+    ],
+    "pos": [
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE",
+      "NONE"
+    ]
+  },
+  "arcs": [
+    [
+      5,
+      6
+    ],
+    [
+      6,
+      7
+    ],
+    [
+      7,
+      8
+    ],
+    [
+      1,
+      8
+    ],
+    [
+      12,
+      8
+    ],
+    [
+      12,
+      1
+    ],
+    [
+      4,
+      1
+    ],
+    [
+      4,
+      12
+    ]
+  ],
+  "arc_tags": [
+    "span",
+    "span",
+    "span",
+    "project-sub",
+    "group-value[count]",
+    "group-key[count]",
+    "superlative-sub[max]",
+    "superlative-attribute[max]"
+  ]
+}
