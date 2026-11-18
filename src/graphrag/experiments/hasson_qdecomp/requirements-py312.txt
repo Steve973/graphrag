@@ -1,0 +1,23 @@
+# AllenNLP's archived commit that removed the old Torch/Transformers upper bounds.
+allennlp @ git+https://github.com/allenai/allennlp.git@80fb606
+
+# Keep the BERT and Hugging Face AdamW APIs used by the original config.
+torch==2.5.1
+torchvision==0.20.1
+transformers==4.39.3
+cached-path==1.6.7
+huggingface-hub==0.27.1
+rich==13.9.4
+
+# Use the current GraphRAG environment's numerical stack.
+networkx>=3,<4
+numpy>=2,<3
+pandas>=2.2,<4
+spacy>=3.8,<3.9
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+ortools==9.11.4210
+edit-distance
+inflect
+matplotlib
+progressbar2
+setuptools<81

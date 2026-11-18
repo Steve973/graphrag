@@ -107,7 +107,16 @@ def stage_decoder(upstream: Path, target: Path) -> None:
 def load_rows(upstream: Path, split: str, graph_file: Path | None):
     if graph_file:
         with graph_file.open(encoding="utf-8") as stream:
-            yield from (json.loads(line) for line in stream if line.strip())
+            first = next((line for line in stream if line.strip()), None)
+            if first is not None:
+                try:
+                    record = json.loads(first)
+                except json.JSONDecodeError:
+                    # A single graph may also be formatted as multiline JSON.
+                    yield json.loads(first + stream.read())
+                else:
+                    yield record
+                    yield from (json.loads(line) for line in stream if line.strip())
     else:
         member = f"datasets/Break/QDMR/{split}_dependencies_graph.json"
         with ZipFile(upstream / "datasets.zip") as archive, archive.open(member) as stream:
@@ -227,7 +236,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--upstream", type=Path, required=True)
     parser.add_argument("--split", choices=("dev", "train"), default="dev")
-    parser.add_argument("--graph-file", type=Path, help="Upstream gold or prediction JSONL")
+    parser.add_argument("--graph-file", type=Path, help="Upstream gold or prediction JSONL, or a single JSON record")
     parser.add_argument("--question-id", help="Select a single record by its BREAK or prediction ID")
     parser.add_argument("--limit", type=int, default=1, help="Maximum records to decode")
     args = parser.parse_args()

@@ -1,0 +1,239 @@
+[
+  {
+    "id": "complete",
+    "criterion": "Establish Alice's agriculture publication record in the supplied graph.",
+    "query": "MATCH (a:Author)-[:AUTHORED]->(p:Publication)-[:HAS_TOPIC]->(t:Topic) WHERE t.parent = 'Agriculture' AND a.id IN ['alice', 'bob'] RETURN a.id AS author_id, p.id AS publication_id, p.year AS year, p.abstract AS abstract ORDER BY publication_id",
+    "result": {
+      "id": "complete-result",
+      "request_id": "complete-request",
+      "status": "success",
+      "data": {
+        "rows": [
+          {
+            "author_id": "alice",
+            "publication_id": "p1",
+            "year": 2020,
+            "abstract": "We ran a randomized field trial comparing irrigation systems on maize yields."
+          },
+          {
+            "author_id": "alice",
+            "publication_id": "p1",
+            "year": 2020,
+            "abstract": "We ran a randomized field trial comparing irrigation systems on maize yields."
+          },
+          {
+            "author_id": "alice",
+            "publication_id": "p2",
+            "year": 2022,
+            "abstract": "We review published results of field trials. No new experiments were conducted."
+          },
+          {
+            "author_id": "bob",
+            "publication_id": "p3",
+            "year": 2021,
+            "abstract": "We surveyed growers about fertilizer costs."
+          },
+          {
+            "author_id": "alice",
+            "publication_id": "p4",
+            "year": 2009,
+            "abstract": "We measured soil acidity on six farms."
+          }
+        ]
+      },
+      "started_at": "2026-01-01T00:00:00Z",
+      "completed_at": "2026-01-01T00:00:00Z"
+    },
+    "rows_pointer": "/rows",
+    "coverage": "complete",
+    "assertions": [
+      {
+        "id": "publication-count",
+        "statement": "Alice authored exactly two distinct agriculture publications from 2010 onward.",
+        "expected": {
+          "relation": "SUPPORTS",
+          "pointers": [
+            "/rows",
+            "/rows/0",
+            "/rows/2"
+          ],
+          "value": 2
+        },
+        "expression": {
+          "filters": [
+            {
+              "field": "author_id",
+              "op": "eq",
+              "value": "alice"
+            },
+            {
+              "field": "year",
+              "op": "ge",
+              "value": 2010
+            }
+          ],
+          "reduce": "count_distinct",
+          "field": "publication_id",
+          "compare": "eq",
+          "target": 2
+        }
+      },
+      {
+        "id": "higher-threshold",
+        "statement": "Alice authored at least three distinct agriculture publications from 2010 onward.",
+        "expected": {
+          "relation": "CONTRADICTS",
+          "pointers": [
+            "/rows",
+            "/rows/0",
+            "/rows/2"
+          ],
+          "value": 2
+        },
+        "expression": {
+          "filters": [
+            {
+              "field": "author_id",
+              "op": "eq",
+              "value": "alice"
+            },
+            {
+              "field": "year",
+              "op": "ge",
+              "value": 2010
+            }
+          ],
+          "reduce": "count_distinct",
+          "field": "publication_id",
+          "compare": "ge",
+          "target": 3
+        }
+      },
+      {
+        "id": "field-trial",
+        "statement": "At least one of Alice's agriculture publications from 2010 onward reports a field trial that its authors conducted.",
+        "expected": {
+          "relation": "SUPPORTS",
+          "pointers": [
+            "/rows/0"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "limited",
+    "criterion": "Establish Alice's agriculture publication record in the supplied graph.",
+    "query": "MATCH (a:Author)-[:AUTHORED]->(p:Publication)-[:HAS_TOPIC]->(t:Topic) WHERE t.parent = 'Agriculture' AND a.id IN ['alice', 'bob'] RETURN a.id AS author_id, p.id AS publication_id, p.year AS year, p.abstract AS abstract ORDER BY publication_id LIMIT 2",
+    "result": {
+      "id": "limited-result",
+      "request_id": "limited-request",
+      "status": "success",
+      "data": {
+        "rows": [
+          {
+            "author_id": "alice",
+            "publication_id": "p1",
+            "year": 2020,
+            "abstract": "We ran a randomized field trial comparing irrigation systems on maize yields."
+          },
+          {
+            "author_id": "alice",
+            "publication_id": "p1",
+            "year": 2020,
+            "abstract": "We ran a randomized field trial comparing irrigation systems on maize yields."
+          }
+        ]
+      },
+      "started_at": "2026-01-01T00:00:00Z",
+      "completed_at": "2026-01-01T00:00:00Z"
+    },
+    "rows_pointer": "/rows",
+    "coverage": "partial",
+    "assertions": [
+      {
+        "id": "threshold-met",
+        "statement": "Alice authored at least one agriculture publication from 2010 onward.",
+        "expected": {
+          "relation": "SUPPORTS",
+          "pointers": [
+            "/rows/0"
+          ],
+          "value": 1
+        },
+        "expression": {
+          "filters": [
+            {
+              "field": "author_id",
+              "op": "eq",
+              "value": "alice"
+            },
+            {
+              "field": "year",
+              "op": "ge",
+              "value": 2010
+            }
+          ],
+          "reduce": "count_distinct",
+          "field": "publication_id",
+          "compare": "ge",
+          "target": 1
+        }
+      },
+      {
+        "id": "threshold-open",
+        "statement": "Alice authored at least two distinct agriculture publications from 2010 onward.",
+        "expected": {
+          "relation": "PARTIAL",
+          "pointers": [
+            "/rows/0"
+          ],
+          "value": 1
+        },
+        "expression": {
+          "filters": [
+            {
+              "field": "author_id",
+              "op": "eq",
+              "value": "alice"
+            },
+            {
+              "field": "year",
+              "op": "ge",
+              "value": 2010
+            }
+          ],
+          "reduce": "count_distinct",
+          "field": "publication_id",
+          "compare": "ge",
+          "target": 2
+        }
+      },
+      {
+        "id": "no-inference-from-empty",
+        "statement": "Alice authored no agriculture publications from 2025 onward.",
+        "expected": {
+          "relation": null
+        },
+        "expression": {
+          "filters": [
+            {
+              "field": "author_id",
+              "op": "eq",
+              "value": "alice"
+            },
+            {
+              "field": "year",
+              "op": "ge",
+              "value": 2025
+            }
+          ],
+          "reduce": "count_distinct",
+          "field": "publication_id",
+          "compare": "eq",
+          "target": 0
+        }
+      }
+    ]
+  }
+]

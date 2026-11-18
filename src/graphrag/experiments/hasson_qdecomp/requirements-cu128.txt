@@ -1,0 +1,5 @@
+--index-url https://download.pytorch.org/whl/cu128
+
+# CUDA 12.8 builds for the GeForce RTX 5060 Ti (Blackwell).
+torch==2.7.1+cu128
+torchvision==0.22.1+cu128
