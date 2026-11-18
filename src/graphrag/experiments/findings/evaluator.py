@@ -55,10 +55,80 @@ class Expression(ContractModel):
             raise EvaluationError("count targets must be nonnegative integers")
 
 
+class FieldOperand(ContractModel):
+    kind: Literal["field"]
+    name: NonEmptyStr
+
+
+class LiteralOperand(ContractModel):
+    kind: Literal["literal"]
+    value: Scalar
+
+
+Operand = FieldOperand | LiteralOperand
+
+
+class FilterRows(ContractModel):
+    op: Literal["filter"]
+    predicates: list[Predicate]
+
+
+class Aggregate(ContractModel):
+    function: Literal["count", "count_distinct", "sum", "mean", "min", "max"]
+    field: NonEmptyStr | None
+    output: NonEmptyStr
+
+
+class GroupRows(ContractModel):
+    op: Literal["group"]
+    by: list[NonEmptyStr]
+    aggregates: Annotated[list[Aggregate], Field(min_length=1)]
+
+
+class DeriveField(ContractModel):
+    op: Literal["derive"]
+    left: Operand
+    arithmetic: Literal["add", "subtract", "multiply", "divide"]
+    right: Operand
+    output: NonEmptyStr
+
+
+class RankRows(ContractModel):
+    op: Literal["rank"]
+    field: NonEmptyStr
+    descending: StrictBool
+    ties: Literal["dense", "competition"]
+    output: NonEmptyStr
+
+
+class SortRows(ContractModel):
+    op: Literal["sort"]
+    field: NonEmptyStr
+    descending: StrictBool
+
+
+class LimitRows(ContractModel):
+    op: Literal["limit"]
+    count: Annotated[StrictInt, Field(ge=0)]
+
+
+RowOperation = FilterRows | GroupRows | DeriveField | RankRows | SortRows | LimitRows
+
+
+class Pipeline(ContractModel):
+    steps: list[RowOperation]
+    field: NonEmptyStr
+    compare: Comparison
+    target: Operand
+
+
+FindingExpression = Pipeline | Expression
+
+
 class Assertion(ContractModel):
     id: NonEmptyStr
     statement: NonEmptyStr
-    expression: Expression | None = None
+    expression: FindingExpression | None = None
     expected: ExpectedFinding | None = None
 
 

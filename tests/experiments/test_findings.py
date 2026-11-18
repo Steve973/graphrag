@@ -60,7 +60,7 @@ def test_boolean_is_not_a_numeric_operand(cases):
 
 
 def test_binding_fallback_and_review(cases):
-    case = cases[0]
+    case = cases[0].model_copy(update={"assertions": cases[0].assertions[:3]})
 
     class Backend:
         async def complete(self, *, messages, response_model):
@@ -104,3 +104,26 @@ def test_binding_fallback_and_review(cases):
     assert run["reviewed_scores"]["higher-threshold"]["relation"] is False
     assert any("Unknown fields" in msg for msg in run["diagnostics"])
     assert any("Invalid model citation" in msg for msg in run["diagnostics"])
+
+
+def test_model_bound_pipeline_ranks_and_cites_the_comparison_population(cases):
+    assertion = cases[0].assertions[3]
+    case = cases[0].model_copy(update={"assertions": [assertion]})
+
+    class Backend:
+        async def complete(self, *, messages, response_model):
+            assert response_model is Bindings
+            return response_model.model_validate({"items": [{
+                "assertion_id": assertion.id,
+                "expression": assertion.expression.model_dump(mode="json"),
+                "reason": "Group by author, count, rank, then select Alice",
+            }]})
+
+    run = asyncio.run(replay(case, "hybrid", Backend()))
+    assert run["paths"] == {assertion.id: "programmatic"}
+    assert all(run["candidate_scores"][assertion.id].values())
+    assert "/rows/3" in run["candidate_findings"][0]["pointers"]  # Bob affects rank.
+
+    partial = case.model_copy(update={"coverage": "partial"})
+    run = asyncio.run(replay(partial, "hybrid", Backend()))
+    assert run["candidate_findings"][0]["relation"] == "CONTEXTUALIZES"

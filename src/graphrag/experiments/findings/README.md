@@ -53,9 +53,22 @@ assertion.
 - `model` sends all assertions and the raw result to the finding generator.
   `compare` runs that mode and then the hybrid mode.
 
-Expressions compose conjunctive filters, a reduction (`count`,
-`count_distinct`, `min`, `max`, or single-row `value`), and a scalar
-comparison. Row schema inference records observed types and missing fields.
+Pipeline expressions run an ordered list of table operations. Each operation
+can use the columns produced by the preceding operation. Available operations
+include filtering, grouping and aggregating, deriving arithmetic columns,
+ranking with an explicit tie rule, sorting, and limiting. The final scalar
+comparison can compare two fields or a field and a literal. The shorter
+filter/reduce/compare form remains available for single reductions.
+
+For example, `publication-rank` filters by year, groups by author, counts
+distinct publications, ranks authors, and then filters to Alice. Its lineage
+includes the authors she was ranked against. `mean-publications` groups by
+author to get publication counts and then aggregates those counts again to
+get the mean. Pipeline results from partial or unknown coverage provide
+context about the returned rows. The shorter form can establish a definitive
+finding from incomplete coverage when its reduction supplies a suitable bound.
+
+Row schema inference records observed types and missing fields.
 Execution validates referenced values and produces pointers to the source
 rows it used. A finding that depends on the full collection also cites that
 collection. Semantic findings use pointers supplied by the model and checked

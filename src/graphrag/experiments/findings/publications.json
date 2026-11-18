@@ -118,6 +118,130 @@
             "/rows/0"
           ]
         }
+      },
+      {
+        "id": "publication-rank",
+        "statement": "Alice ranks first by distinct agriculture publications from 2010 onward, using dense ranking.",
+        "expected": {
+          "relation": "SUPPORTS",
+          "pointers": [
+            "/rows",
+            "/rows/0",
+            "/rows/1",
+            "/rows/2",
+            "/rows/3"
+          ],
+          "value": 1
+        },
+        "expression": {
+          "steps": [
+            {
+              "op": "filter",
+              "predicates": [
+                {
+                  "field": "year",
+                  "op": "ge",
+                  "value": 2010
+                }
+              ]
+            },
+            {
+              "op": "group",
+              "by": [
+                "author_id"
+              ],
+              "aggregates": [
+                {
+                  "function": "count_distinct",
+                  "field": "publication_id",
+                  "output": "publication_count"
+                }
+              ]
+            },
+            {
+              "op": "rank",
+              "field": "publication_count",
+              "descending": true,
+              "ties": "dense",
+              "output": "rank"
+            },
+            {
+              "op": "filter",
+              "predicates": [
+                {
+                  "field": "author_id",
+                  "op": "eq",
+                  "value": "alice"
+                }
+              ]
+            }
+          ],
+          "field": "rank",
+          "compare": "eq",
+          "target": {
+            "kind": "literal",
+            "value": 1
+          }
+        }
+      },
+      {
+        "id": "mean-publications",
+        "statement": "Among Alice and Bob, the mean number of distinct agriculture publications per author from 2010 onward is 1.5.",
+        "expected": {
+          "relation": "SUPPORTS",
+          "pointers": [
+            "/rows",
+            "/rows/0",
+            "/rows/1",
+            "/rows/2",
+            "/rows/3"
+          ],
+          "value": 1.5
+        },
+        "expression": {
+          "steps": [
+            {
+              "op": "filter",
+              "predicates": [
+                {
+                  "field": "year",
+                  "op": "ge",
+                  "value": 2010
+                }
+              ]
+            },
+            {
+              "op": "group",
+              "by": [
+                "author_id"
+              ],
+              "aggregates": [
+                {
+                  "function": "count_distinct",
+                  "field": "publication_id",
+                  "output": "publication_count"
+                }
+              ]
+            },
+            {
+              "op": "group",
+              "by": [],
+              "aggregates": [
+                {
+                  "function": "mean",
+                  "field": "publication_count",
+                  "output": "mean_count"
+                }
+              ]
+            }
+          ],
+          "field": "mean_count",
+          "compare": "eq",
+          "target": {
+            "kind": "literal",
+            "value": 1.5
+          }
+        }
       }
     ]
   },
