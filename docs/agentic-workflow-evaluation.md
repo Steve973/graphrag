@@ -476,6 +476,8 @@ requirements.
 | AC13 | Source suitability and trust | Uses appropriate authorized sources and respects untrusted-data boundaries | G [28] |
 | AC14 | Retrieval completeness evaluation | Determines whether retrieved results adequately represent the available records satisfying the research requirements, using independent checks or defensible coverage estimates appropriate to the query | R/E [17], [8] |
 | AC15 | Empty-result validation | Distinguishes correctly empty result sets from incorrect or inadequate retrieval, and prevents empty results from automatically receiving a successful acquisition evaluation | R/E [15], [8], [17] |
+| AC16 | Hybrid and complementary retrieval | Supports appropriate selection, combination, and integration of lexical, semantic, structured, and graph-based retrieval techniques when complementary approaches are necessary to satisfy research requirements | R/G [40], [41], [42] |
+| AC18 | Graph embedding-based retrieval | Supports graph representation learning and embedding-based discovery of structurally or semantically related entities, including integration with other retrieval methods when appropriate | R/G [43], [44] |
 
 ### 10.1 Query Correctness
 
@@ -1906,6 +1908,11 @@ The following are standard Markdown reference definitions.
 [37]: https://aclanthology.org/2024.emnlp-main.365/
 [38]: https://arxiv.org/abs/2308.03688
 [39]: https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/
+[40]: https://neo4j.com/developer/genai-ecosystem/hybrid-search/
+[41]: https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking
+[42]: https://arxiv.org/abs/2508.01405
+[43]: https://pmc.ncbi.nlm.nih.gov/articles/PMC5108654/
+[44]: https://neo4j.com/docs/graph-data-science/current/machine-learning/node-embeddings/
 
 ---
 
