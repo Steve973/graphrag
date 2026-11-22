@@ -454,15 +454,15 @@ been satisfactorily answered.
 **Objective:** Determine whether the workflow reliably acquires the information needed to satisfy its research 
 requirements.
 
-**Research foundation:** RAGChecker, Corrective RAG, Self-RAG, Adaptive-RAG, and Text2Cypher research. 
-[7], [15], [16], [17], [18]
+**Research foundation:** RAGChecker, Corrective RAG, Self-RAG, Adaptive-RAG, Text2Cypher, and faithful agentic search research. 
+[7], [15], [16], [17], [18], [45]
 
 ### Evaluation Criteria
 
 | ID | Criterion | Required capability | Basis |
 |---|---|---|---|
 | AC1 | Retrieval strategy selection | Selects appropriate sources, retrieval methods, and tools | R [7], [15] |
-| AC2 | Query semantic correctness | Constructs retrieval operations that correctly express intended information requirements | R [18] |
+| AC2 | Query semantic correctness | Constructs retrieval operations that correctly express intended information requirements | R [18], [45] |
 | AC3 | Retrieval precision | Obtains relevant information while controlling irrelevant or misleading results | R [17] |
 | AC4 | Retrieval coverage | Obtains adequate coverage of relevant available information when required | R [17] |
 | AC5 | Retrieval-result assessment | Recognizes irrelevant, incomplete, inadequate, or defective results | R [15], [16] |
@@ -597,7 +597,7 @@ whether the identified evidence actually supports the factual claim. That will b
 **Objective:** Determine whether the system establishes how acquired evidence supports the research objectives derived 
 from the original question.
 
-**Research foundation:** FEVER, FEVEROUS, FActScore, and attribution research. [23], [24], [25], [26]
+**Research foundation:** FEVER, FEVEROUS, FActScore, attribution research, and faithful agentic search. [23], [24], [25], [26], [45]
 
 The term *Evidence Assessment and Research Findings* is used here as an implementation-independent architectural 
 category. It must not be used to preferentially score any particular implementation.
@@ -612,7 +612,7 @@ category. It must not be used to preferentially score any particular implementat
 | EF4 | Evidence combination | Supports conclusions requiring multiple records, sources, relationships, or computations | R [24] |
 | EF5 | Contradictions and qualifications | Preserves material contradictory evidence, limitations, and qualifications | R [23], [24] |
 | EF6 | Traceable support attribution | Preserves relationships among evaluated propositions, findings, and specific evidence | R [26] |
-| EF7 | Observation versus inference | Distinguishes directly observed data from conclusions derived through computation or inference | R/E [24], [26] |
+| EF7 | Observation versus inference | Distinguishes directly observed data from conclusions derived through computation or inference | R/E [24], [26], [45] |
 | EF8 | Reusable assessment results | Preserves established support assessments for later processing, reconsideration, and reporting | E [26], [13] |
 
 ### Evaluation Considerations
@@ -757,7 +757,7 @@ Recovery should be appropriate to the failure, not merely an unconditional retry
 **Objective:** Determine whether the workflow adequately checks the groundedness, accuracy, consistency, and evidentiary 
 validity of intermediate and final conclusions.
 
-**Research foundation:** RAGAS, RAGChecker, FActScore, FEVER, and attribution evaluation. [17], [23], [25], [26], [32]
+**Research foundation:** RAGAS, RAGChecker, FActScore, FEVER, attribution evaluation, and faithful agentic search. [17], [23], [25], [26], [32], [45]
 
 ### Preliminary Evaluation Criteria
 
@@ -765,8 +765,8 @@ validity of intermediate and final conclusions.
 |---|---|---|---|
 | V1 | Claim groundedness | Checks whether factual claims are supported by associated evidence | R [23], [25], [32] |
 | V2 | Hallucination detection | Detects fabricated or unsupported claims, references, and conclusions | R [23], [25] |
-| V3 | Inference validity | Distinguishes supported inferences from unsupported interpretation or speculation | R/E [24], [26] |
-| V4 | Claim-to-evidence verification | Determines whether cited evidence actually supports the particular attributed claim | R [26] |
+| V3 | Inference validity | Distinguishes supported inferences from unsupported interpretation or speculation | R/E [24], [26], [45] |
+| V4 | Claim-to-evidence verification | Determines whether cited evidence actually supports the particular attributed claim | R [26], [45] |
 | V5 | Factual and logical consistency | Detects material inconsistencies, contradictions, and factual errors | R/E [23], [24] |
 | V6 | Verifier reliability | Establishes whether the verification mechanism itself reliably distinguishes correct and incorrect results | R/E [17], [32] |
 
@@ -893,13 +893,13 @@ The workflow should preserve the distinction between a completed execution and a
 **Objective:** Determine whether reports faithfully communicate established research and provide sufficient transparency 
 for analysts to inspect significant conclusions.
 
-**Research foundation:** AIS attribution research, FActScore, RAGChecker, and NIST AI RMF. [17], [25], [26], [31]
+**Research foundation:** AIS attribution research, FActScore, RAGChecker, faithful agentic search, and NIST AI RMF. [17], [25], [26], [31], [45]
 
 ### Preliminary Evaluation Criteria
 
 | ID | Criterion | Required capability | Basis |
 |---|---|---|---|
-| T1 | Evidence-aligned reporting | Produces conclusions consistent with established findings and their limitations | R [25], [26] |
+| T1 | Evidence-aligned reporting | Produces conclusions consistent with established findings and their limitations | R [25], [26], [45] |
 | T2 | Accessible supporting evidence | Makes supporting evidence available for material report claims | R/S [19], [26] |
 | T3 | Operational transparency | Exposes relevant workflow operations, decisions, outcomes, and limitations | G/E [31] |
 | T4 | Accurate limitation disclosure | Reports unresolved questions, contradictions, qualifications, and failures | R/E [8], [31] |
@@ -1069,8 +1069,8 @@ use is justified by the task and its observed performance.
 correctness and reliability. Will changes in the architecture or implementation change the reliability of investigative
 outcomes?
 
-**Research foundation:** RAGChecker, AgentBench, NIST AI RMF, and structured-output benchmark research. 
-[17], [30], [31], [38]
+**Research foundation:** RAGChecker, AgentBench, faithful agentic search, NIST AI RMF, and structured-output benchmark research. 
+[17], [30], [31], [38], [45]
 
 ### Preliminary Evaluation Criteria
 
@@ -1079,7 +1079,7 @@ outcomes?
 | X1 | Deterministic workflow testing | Supports testing orchestration independently of live LLM variability | G/E [1], [31] |
 | X2 | Execution path coverage | Tests representative success, failure, recovery, and exceptional paths | G/E [31], [38] |
 | X3 | Representative evaluation scenarios | Maintains realistic cases with independently established expected outcomes | R [17], [38] |
-| X4 | Measured research quality | Quantifies retrieval, evidence, verification, and answer-quality characteristics | R [17], [32] |
+| X4 | Measured research quality | Quantifies retrieval, evidence, verification, and answer-quality characteristics | R [17], [32], [45] |
 | X5 | Reproducible regression testing | Supports comparison across software, model, configuration, and workflow changes | G/E [30], [31] |
 
 ### Additional Topics to Examine
@@ -1863,6 +1863,34 @@ Where a criterion extends a research finding into a proposed systems-engineering
     Updated security guidance for LLM-based applications and related agentic risks.  
     [Source][39]
 
+### 28.12 Hybrid Retrieval and Graph Embeddings
+
+40. **Neo4j. _Hybrid Search_.**  
+    Technical guidance on combining lexical and vector retrieval, ranking fusion, and graph expansion.  
+    [Source][40]
+
+41. **Microsoft. _Relevance Scoring in Hybrid Search Using Reciprocal Rank Fusion (RRF)_.**  
+    Technical documentation for merging ranked retrieval results from multiple search methods.  
+    [Source][41]
+
+42. **Wang et al. (2025). _Balancing the Blend: An Experimental Analysis of Trade-offs in Hybrid Search_.**  
+    Empirical study of trade-offs among full-text, sparse-vector, dense-vector, and tensor search methods and their combinations.  
+    [Source][42]
+
+43. **Grover and Leskovec (2016). _node2vec: Scalable Feature Learning for Networks_. KDD 2016.**  
+    Research on learning node representations from graph structure for downstream tasks including link prediction.  
+    [Source][43]
+
+44. **Neo4j. _Node Embeddings — Graph Data Science Manual_.**  
+    Technical documentation on graph embedding algorithms and their use in graph-based machine learning.  
+    [Source][44]
+
+### 28.13 Faithful Reasoning in Agentic Retrieval
+
+45. **Xu et al. (2026). _Beyond Correctness: Rewarding Faithful Reasoning in Retrieval-Augmented Generation_. Transactions on Machine Learning Research.**  
+    Research evaluating faithfulness across reasoning-to-search, retrieved-information-to-reasoning, and reasoning-to-answer transitions in agentic search.  
+    [Source][45]
+
 ---
 
 ## 29. Reference Link Definitions
@@ -1913,6 +1941,7 @@ The following are standard Markdown reference definitions.
 [42]: https://arxiv.org/abs/2508.01405
 [43]: https://pmc.ncbi.nlm.nih.gov/articles/PMC5108654/
 [44]: https://neo4j.com/docs/graph-data-science/current/machine-learning/node-embeddings/
+[45]: https://arxiv.org/abs/2510.13272
 
 ---
 
