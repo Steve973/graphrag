@@ -219,9 +219,11 @@ descriptions or unsupported assertions do not satisfy this requirement.
 
 ## 3. Question Understanding and Semantic Grounding
 
-**Objective:** Determine whether the system accurately understands the user's information requirements, concepts, constraints, and assumptions.
+**Objective:** Determine whether the system accurately understands the user's information requirements, concepts, 
+constraints, and assumptions.
 
-**Research foundation:** Ambiguous-question answering, adaptive retrieval, ontology-grounded RAG, and question decomposition. [3], [4], [7], [10]
+**Research foundation:** Ambiguous-question answering, adaptive retrieval, ontology-grounded RAG, and question 
+decomposition. [3], [4], [7], [10]
 
 ### Evaluation Criteria
 
@@ -334,8 +336,8 @@ retrieval has occurred.
 **Objective:** Determine whether the system establishes an appropriate, coherent, and sufficiently complete strategy for 
 thoroughly understanding a research question.
 
-**Research foundation:** Adaptive decomposition, multi-hop question answering, and evidence-oriented planning. [9], 
-[10], [11]
+**Research foundation:** Adaptive decomposition, multi-hop question answering, and evidence-oriented planning. 
+[9], [10], [11]
 
 ### Evaluation Criteria
 
@@ -365,8 +367,8 @@ The rubric does not prescribe or favor a particular planning implementation, str
 **Objective:** Ensure unresolved information requirements remain accounted for throughout execution and do not silently 
 disappear during iteration or replanning.
 
-**Research foundation:** Adaptive planning, persistent agent context, workflow memory, and stopping research. [9], [12], 
-[13], [14]
+**Research foundation:** Adaptive planning, persistent agent context, workflow memory, and stopping research. 
+[9], [12], [13], [14]
 
 This is a proposed systems-engineering capability derived from those concerns.
 
@@ -454,8 +456,8 @@ been satisfactorily answered.
 **Objective:** Determine whether the workflow reliably acquires the information needed to satisfy its research 
 requirements.
 
-**Research foundation:** RAGChecker, Corrective RAG, Self-RAG, Adaptive-RAG, Text2Cypher, and faithful agentic search research. 
-[7], [15], [16], [17], [18], [45], [46]
+**Research foundation:** RAGChecker, Corrective RAG, Self-RAG, Adaptive-RAG, Text2Cypher, and faithful agentic search 
+research. [7], [15], [16], [17], [18], [45], [46]
 
 ### Evaluation Criteria
 
@@ -597,7 +599,8 @@ whether the identified evidence actually supports the factual claim. That will b
 **Objective:** Determine whether the system establishes how acquired evidence supports the research objectives derived 
 from the original question.
 
-**Research foundation:** FEVER, FEVEROUS, FActScore, attribution research, and faithful agentic search. [23], [24], [25], [26], [45]
+**Research foundation:** FEVER, FEVEROUS, FActScore, attribution research, and faithful agentic search. 
+[23], [24], [25], [26], [45]
 
 The term *Evidence Assessment and Research Findings* is used here as an implementation-independent architectural 
 category. It must not be used to preferentially score any particular implementation.
@@ -757,7 +760,8 @@ Recovery should be appropriate to the failure, not merely an unconditional retry
 **Objective:** Determine whether the workflow adequately checks the groundedness, accuracy, consistency, and evidentiary 
 validity of intermediate and final conclusions.
 
-**Research foundation:** RAGAS, RAGChecker, FActScore, FEVER, attribution evaluation, and faithful agentic search. [17], [23], [25], [26], [32], [45]
+**Research foundation:** RAGAS, RAGChecker, FActScore, FEVER, attribution evaluation, and faithful agentic search. 
+[17], [23], [25], [26], [32], [45]
 
 ### Preliminary Evaluation Criteria
 
@@ -1604,9 +1608,8 @@ Mandatory acceptance gates must remain distinguishable from weighted quality mea
 
 ## 27. Requirements Inventory Status
 
-The following categories have substantially developed candidate requirements.
-
-They are not yet finalized scoring instruments.
+The following categories have substantially developed candidate requirements. They are not yet finalized scoring 
+instruments.
 
 | Category | Status |
 |---|---|
@@ -1673,11 +1676,10 @@ They are not yet finalized scoring instruments.
 
 ## 28. Reference Sources
 
-The references below provide the research and engineering foundation for the candidate requirements.
-
-They do not necessarily prescribe the exact architectural requirements in this document.
-
-Where a criterion extends a research finding into a proposed systems-engineering requirement, that distinction is identified through its basis classification.
+The references below provide the research and engineering foundation for the candidate requirements. They do not 
+necessarily prescribe the exact architectural requirements in this document. Where a criterion extends a research 
+finding into a proposed systems-engineering requirement, that distinction is identified through its basis 
+classification.
 
 ### 28.1 Agent Architecture, Question Understanding, and Planning
 
