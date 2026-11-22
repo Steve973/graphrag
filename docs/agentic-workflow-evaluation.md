@@ -207,6 +207,12 @@ Acceptable implementation evidence includes:
 Claims made by an implementation's authors should be treated as statements requiring substantiation, not as proof of 
 capability.
 
+Every significant capability support finding and gap finding must cite specific, inspectable implementation evidence. 
+Source-code citations must identify the relevant file, symbol, and code location where available. Runtime findings must 
+identify the applicable test, execution trace, log, or observed behavior. Evidence references must be sufficiently 
+precise for an independent evaluator to locate and examine the material supporting the finding. General architectural 
+descriptions or unsupported assertions do not satisfy this requirement.
+
 ---
 
 # Part I — Research Understanding and Planning
@@ -1407,6 +1413,13 @@ The evaluator should distinguish:
 
 ### 25.7 Remediation Analysis
 
+Architectural remediation feasibility must be evaluated against the actual architecture and implementation under 
+assessment. For each material gap, the evaluator must identify the relevant existing components, interfaces, extension 
+points, dependencies, and architectural constraints, supported by specific implementation evidence. Feasibility must 
+reflect the changes necessary within that architecture, not the ease of implementing the capability in a hypothetical 
+alternative architecture. Proposed remediation must identify the affected implementation locations and the specific 
+changes required to establish the missing capability.
+
 For each material deficiency, assess:
 
 1. Whether the current architecture can support the missing capability.
@@ -1430,7 +1443,89 @@ The evaluator must:
 - Avoid overstating confidence.
 - Record unresolved assessment questions.
 
----
+### 25.9 Reusable Per-Criterion Assessment Template
+
+The following template defines the required structure for assessing an implementation against the criteria in this 
+rubric. Each applicable rubric section must be identified, and each criterion within that section must receive an
+individual assessment. The template is defined once rather than repeated for each section or criterion.
+
+Each criterion assessment must identify significant supporting capabilities, deficiencies, architectural remediation
+feasibility, and requirements for addressing identified gaps. Findings must be individually identifiable and supported
+by specific, independently inspectable implementation evidence. Source-code references must identify relevant files,
+symbols, and precise code locations where available. Runtime evidence must identify relevant tests, execution traces,
+logs, or observed results.
+
+Architectural remediation feasibility must be assessed against the actual architecture and implementation under
+evaluation, considering existing components, interfaces, extension points, dependencies, and constraints. Remediation
+recommendations must identify the specific changes needed within that architecture rather than proposing hypothetical
+alternatives without considering the existing design.
+
+The evaluator must distinguish demonstrated deficiencies from capabilities that could not be adequately assessed.
+Missing documentation alone does not establish that a capability is absent. Planned but unimplemented capabilities must 
+be scored as absent, consistent with Section 2.4.
+
+```text
+IMPLEMENTATION: <KEA-RAG | KEA-MCP | KDA>
+
+SECTION: <section-id> — <section-name>
+
+  ITEM: <criterion-id> — <criterion-name>
+
+  SCORES:
+    Architecture and design: <0–4 | not assessed | not applicable>
+    Implementation: <0–4 | not assessed | not applicable>
+    Demonstrated Effectiveness: <0–4 | not assessed | not applicable>
+
+  SUPPORT DETAILS
+    <individually identified capabilities that satisfy the criterion,
+     with specific implementation evidence and references>
+
+  SUPPORT GAPS
+    <individually identified deficiencies, their significance, and
+     specific implementation evidence and references>
+
+  ARCHITECTURAL GAP REMEDIATION FEASIBILITY
+    <for each identified gap, how readily the existing architecture
+     can accommodate remediation, with supporting evidence>
+
+  GAP REMEDIATION REQUIREMENTS
+    <for each identified gap, the specific changes required to address
+     it and how successful remediation would be established>
+
+  <Repeat ITEM for each criterion in the section.>
+
+<Repeat SECTION for each applicable section in the rubric.>
+
+REPORT CONCLUSION AND ASSESSMENT COVERAGE
+
+<A section each, named "Architecture Rating", "Implementation Rating", and "Demonstrated Effectiveness Rating">:
+  Total report points possible: <sum indicating the highest possible score from all reportable criteria>
+  Total assessable points: <sum indicating the highest possible score from assessable criteria>
+  Total score: <sum from all criteria assessments>
+  Percent total: <percentage of total report points possible>
+  Percent assessable: <percentage of total assessable points>
+
+FAILED MANDATORY REQUIREMENTS
+
+<identifiers of mandatory requirements determined to be unmet, or none>
+```
+
+Each support finding and gap must be separately identifiable, allowing its evidence and corresponding remediation 
+analysis to be traced without ambiguity. Multiple findings may be provided under each heading as necessary. The 
+assessment must not combine unrelated deficiencies into a single finding or substitute general conclusions for
+specific implementation evidence.
+
+For every material gap, the evaluator must identify its architectural remediation feasibility and the changes required 
+to address it. Where remediation cannot be adequately assessed, the evaluator must identify the missing information 
+rather than speculate. The remediation analysis must remain consistent with the architecture actually examined.
+
+The report conclusion must distinguish the total available score from the score that could be established using 
+available assessment evidence. Confirmed deficiencies must receive their appropriate scores and must not be excluded
+from the assessable-point total. Criteria that genuinely cannot be evaluated must not be assigned zero solely because of 
+insufficient access or evidence.
+
+Mandatory requirements must be evaluated independently of numerical scoring. Any mandatory requirement determined to be 
+unmet must be explicitly identified in the report conclusion, regardless of the overall assessment score.
 
 ## 26. Static and Dynamic Evaluation
 
