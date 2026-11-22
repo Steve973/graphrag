@@ -1553,9 +1553,8 @@ Determine whether the architecture deliberately supports each required capabilit
 
 ### 26.2 Implementation Assessment
 
-Inspect actual runtime enforcement and operational behavior.
-
-Capabilities described only in documentation should not receive full implementation credit.
+Inspect actual runtime enforcement and operational behavior. Capabilities described only in documentation should not 
+receive full implementation credit.
 
 ### 26.3 Dynamic Evaluation
 
@@ -1574,19 +1573,14 @@ Measure:
 
 ### 26.4 Comparative Assessment
 
-Apply identical criteria to comparable responsibilities.
-
-Differences in system scope must be documented.
-
-A component should not automatically be penalized for lacking functionality outside its agreed responsibility.
-
-For integration analysis, assess whether missing capabilities must be supplied by another component.
+Apply identical criteria to comparable responsibilities. Differences in system scope must be documented. A component 
+should not automatically be penalized for lacking functionality outside its agreed responsibility. For integration 
+analysis, assess whether missing capabilities must be supplied by another component.
 
 ### 26.5 Assessment Confidence
 
-Assessment confidence must remain independent of the score.
-
-An implementation may have a strong design but insufficient available evidence for a high-confidence assessment.
+Assessment confidence must remain independent of the score. An implementation may have a strong design but insufficient 
+available evidence for a high-confidence assessment.
 
 ### 26.6 Final Scoring
 
@@ -1954,9 +1948,8 @@ The following are standard Markdown reference definitions.
 
 ## 30. Remaining Research and Formalization
 
-This document establishes a working inventory of assessment concerns.
-
-It is not yet a finalized numerical scoring instrument.
+This document establishes a working inventory of assessment concerns. It is not yet a finalized numerical scoring 
+instrument.
 
 The following work remains:
 
@@ -1983,10 +1976,9 @@ The following work remains:
 
 ### Final Evaluation Principle
 
-The objective is not to identify the architecture with the most agents, the most elaborate design, or the greatest number of implemented features.
-
-The objective is to determine which architecture most effectively delivers accurate, consistent, evidence-based, inspectable, and reliable research outcomes.
-
-Where deficiencies exist, the assessment should identify their significance and the most appropriate path toward improvement.
+The objective is not to identify the architecture with the most agents, the most elaborate design, or the greatest 
+number of implemented features. The objective is to determine which architecture most effectively delivers accurate, 
+consistent, evidence-based, inspectable, and reliable research outcomes. Where deficiencies exist, the assessment should 
+identify their significance and the most appropriate path toward improvement.
 
 **End of Working Draft — Version 0.2**
