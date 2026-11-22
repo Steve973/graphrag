@@ -258,17 +258,17 @@ The evaluator must not require a dedicated question-understanding agent.
 understanding appropriately.
 
 **Research foundation:** Ontology-grounded retrieval, knowledge-graph question answering, graph constraint validation, 
-and symbolic graph execution. [4], [5], [6]
+and symbolic graph execution. [4], [5], [6], [46]
 
 ### Evaluation Criteria
 
 | ID | Criterion | Required capability | Basis |
 |---|---|---|---|
-| O1 | Schema discovery | Discovers or accesses relevant data structures, entities, properties, and relationships | R/G [5], [6] |
+| O1 | Schema discovery | Discovers or accesses relevant data structures, entities, properties, and relationships | R/G [5], [6], [46] |
 | O2 | Semantic interpretation | Correctly understands what available data structures represent | R [4], [6] |
-| O3 | Domain concept mapping | Maps concepts in the question to relevant domain entities, vocabulary, and relationships | R [4], [6] |
+| O3 | Domain concept mapping | Maps concepts in the question to relevant domain entities, vocabulary, and relationships | R/G [4], [6], [46] |
 | O4 | Structural constraint awareness | Respects relationship direction, entity types, cardinality, property semantics, and applicable domain constraints | S/E [5] |
-| O5 | Semantically guided research | Uses schema or ontology knowledge to guide acquisition, reasoning, and applicable validation | R [4], [6] |
+| O5 | Semantically guided research | Uses schema or ontology knowledge to guide acquisition, reasoning, and applicable validation | R/G [4], [6], [46] |
 
 ### Capability Levels
 
@@ -455,20 +455,20 @@ been satisfactorily answered.
 requirements.
 
 **Research foundation:** RAGChecker, Corrective RAG, Self-RAG, Adaptive-RAG, Text2Cypher, and faithful agentic search research. 
-[7], [15], [16], [17], [18], [45]
+[7], [15], [16], [17], [18], [45], [46]
 
 ### Evaluation Criteria
 
 | ID | Criterion | Required capability | Basis |
 |---|---|---|---|
-| AC1 | Retrieval strategy selection | Selects appropriate sources, retrieval methods, and tools | R [7], [15] |
-| AC2 | Query semantic correctness | Constructs retrieval operations that correctly express intended information requirements | R [18], [45] |
+| AC1 | Retrieval strategy selection | Selects appropriate sources, retrieval methods, and tools | R/G [7], [15], [46] |
+| AC2 | Query semantic correctness | Constructs retrieval operations that correctly express intended information requirements | R/G [18], [45], [46] |
 | AC3 | Retrieval precision | Obtains relevant information while controlling irrelevant or misleading results | R [17] |
 | AC4 | Retrieval coverage | Obtains adequate coverage of relevant available information when required | R [17] |
-| AC5 | Retrieval-result assessment | Recognizes irrelevant, incomplete, inadequate, or defective results | R [15], [16] |
-| AC6 | Corrective acquisition | Changes acquisition strategy when initial retrieval is inadequate | R [15] |
+| AC5 | Retrieval-result assessment | Recognizes irrelevant, incomplete, inadequate, or defective results | R/G [15], [16], [46] |
+| AC6 | Corrective acquisition | Changes acquisition strategy when initial retrieval is inadequate | R/G [15], [46] |
 | AC7 | Result integrity | Correctly handles result structures, duplicates, nulls, aggregations, pagination, and truncation | R/E [18], [17] |
-| AC8 | Multi-step retrieval | Acquires information spanning multiple entities, relationships, or retrieval operations | R [10], [11] |
+| AC8 | Multi-step retrieval | Acquires information spanning multiple entities, relationships, or retrieval operations | R/G [10], [11], [46] |
 | AC9 | Evidence diversity | Controls redundant evidence and obtains complementary information when appropriate | R/E [17] |
 | AC10 | Provenance availability | Ensures evidence sources are available or recoverable for later substantiation | S/E [19], [20] |
 | AC11 | Acquisition failure handling | Distinguishes legitimate empty results from errors, timeouts, and partial execution | R/E [15], [18] |
@@ -476,7 +476,7 @@ requirements.
 | AC13 | Source suitability and trust | Uses appropriate authorized sources and respects untrusted-data boundaries | G [28] |
 | AC14 | Retrieval completeness evaluation | Determines whether retrieved results adequately represent the available records satisfying the research requirements, using independent checks or defensible coverage estimates appropriate to the query | R/E [17], [8] |
 | AC15 | Empty-result validation | Distinguishes correctly empty result sets from incorrect or inadequate retrieval, and prevents empty results from automatically receiving a successful acquisition evaluation | R/E [15], [8], [17] |
-| AC16 | Hybrid and complementary retrieval | Supports appropriate selection, combination, and integration of lexical, semantic, structured, and graph-based retrieval techniques when complementary approaches are necessary to satisfy research requirements | R/G [40], [41], [42] |
+| AC16 | Hybrid and complementary retrieval | Supports appropriate selection, combination, and integration of lexical, semantic, structured, and graph-based retrieval techniques when complementary approaches are necessary to satisfy research requirements | R/G [40], [41], [42], [46] |
 | AC18 | Graph embedding-based retrieval | Supports graph representation learning and embedding-based discovery of structurally or semantically related entities, including integration with other retrieval methods when appropriate | R/G [43], [44] |
 
 ### 10.1 Query Correctness
@@ -659,7 +659,7 @@ collectively satisfies the original question.
 
 | ID | Criterion | Required capability | Basis |
 |---|---|---|---|
-| EC1 | Objective-level sufficiency | Determines whether findings adequately establish each research requirement | R/E [8], [24] |
+| EC1 | Objective-level sufficiency | Determines whether findings adequately establish each research requirement | R/G/E [8], [24], [46] |
 | EC2 | Question-level completeness | Determines whether established objectives collectively answer the original question | R/E [17], [25] |
 | EC3 | Logical completeness | Accounts for necessary dependencies and relationships among objectives | R/E [24], [11] |
 | EC4 | Evidence-gap identification | Identifies missing evidence or unresolved requirements preventing completion | R/E [8], [17] |
@@ -1070,7 +1070,7 @@ correctness and reliability. Will changes in the architecture or implementation 
 outcomes?
 
 **Research foundation:** RAGChecker, AgentBench, faithful agentic search, NIST AI RMF, and structured-output benchmark research. 
-[17], [30], [31], [38], [45]
+[17], [30], [31], [38], [45], [46]
 
 ### Preliminary Evaluation Criteria
 
@@ -1078,8 +1078,8 @@ outcomes?
 |---|---|---|---|
 | X1 | Deterministic workflow testing | Supports testing orchestration independently of live LLM variability | G/E [1], [31] |
 | X2 | Execution path coverage | Tests representative success, failure, recovery, and exceptional paths | G/E [31], [38] |
-| X3 | Representative evaluation scenarios | Maintains realistic cases with independently established expected outcomes | R [17], [38] |
-| X4 | Measured research quality | Quantifies retrieval, evidence, verification, and answer-quality characteristics | R [17], [32], [45] |
+| X3 | Representative evaluation scenarios | Maintains realistic cases with independently established expected outcomes | R/G [17], [38], [46] |
+| X4 | Measured research quality | Quantifies retrieval, evidence, verification, and answer-quality characteristics | R/G [17], [32], [45], [46] |
 | X5 | Reproducible regression testing | Supports comparison across software, model, configuration, and workflow changes | G/E [30], [31] |
 
 ### Additional Topics to Examine
@@ -1891,6 +1891,12 @@ Where a criterion extends a research finding into a proposed systems-engineering
     Research evaluating faithfulness across reasoning-to-search, retrieved-information-to-reasoning, and reasoning-to-answer transitions in agentic search.  
     [Source][45]
 
+### 28.14 GraphRAG Engineering and Evaluation
+
+46. **Bratanič and Hane (2025). _Essential GraphRAG_. Manning Publications.**  
+    Practical engineering guidance covering knowledge-graph retrieval, schema-grounded Text2Cypher, hybrid search, agentic retrieval and critique, and evaluation using representative benchmarks and ground-truth queries.  
+    [Source][46]
+
 ---
 
 ## 29. Reference Link Definitions
@@ -1942,6 +1948,7 @@ The following are standard Markdown reference definitions.
 [43]: https://pmc.ncbi.nlm.nih.gov/articles/PMC5108654/
 [44]: https://neo4j.com/docs/graph-data-science/current/machine-learning/node-embeddings/
 [45]: https://arxiv.org/abs/2510.13272
+[46]: https://go.neo4j.com/rs/710-RRC-335/images/Essential-GraphRAG.pdf
 
 ---
 
