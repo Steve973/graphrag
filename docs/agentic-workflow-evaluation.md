@@ -474,6 +474,8 @@ requirements.
 | AC11 | Acquisition failure handling | Distinguishes legitimate empty results from errors, timeouts, and partial execution | R/E [15], [18] |
 | AC12 | Retrieval efficiency | Obtains required information with proportionate latency and resource consumption | R [7], [12] |
 | AC13 | Source suitability and trust | Uses appropriate authorized sources and respects untrusted-data boundaries | G [28] |
+| AC14 | Retrieval completeness evaluation | Determines whether retrieved results adequately represent the available records satisfying the research requirements, using independent checks or defensible coverage estimates appropriate to the query | R/E [17], [8] |
+| AC15 | Empty-result validation | Distinguishes correctly empty result sets from incorrect or inadequate retrieval, and prevents empty results from automatically receiving a successful acquisition evaluation | R/E [15], [8], [17] |
 
 ### 10.1 Query Correctness
 
