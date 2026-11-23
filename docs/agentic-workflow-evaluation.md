@@ -2141,6 +2141,18 @@ types of questions that this system is not likely to answer well or correctly. B
 supported by actual test results, source-code inspection, or an architectural constraint/capability. This section can 
 list the aspects that seem particularly weak and in need of prioritized or immediate improvement.>
 
+Architectural Assessment:
+<Provide an overall assessment of the system's architecture and design, considering its suitability for the intended 
+research responsibilities, coherence of its components and interfaces, separation of concerns, allocation of 
+responsibilities, extensibility, maintainability, and architectural constraints.
+
+Evaluate whether the architecture provides a sound foundation for reliable agentic research and whether its design can 
+accommodate missing or future capabilities without disproportionate restructuring. Distinguish fundamental architectural 
+limitations from implementation deficiencies that can be corrected within the existing design.
+
+Identify particularly effective or problematic architectural decisions, their consequences, and significant technical 
+tradeoffs. Support conclusions with specific architectural or implementation evidence rather than general impressions.>
+
 Improvement Plan:
 <Include a concise, prioritized plan to improve the system. Prioritize improvements by their consequences, not simply by 
 their scores. Consider listing sections that contain crucial items, best ROI items, easy/quick fixes, simple errors, 
