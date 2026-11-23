@@ -2153,6 +2153,12 @@ limitations from implementation deficiencies that can be corrected within the ex
 Identify particularly effective or problematic architectural decisions, their consequences, and significant technical 
 tradeoffs. Support conclusions with specific architectural or implementation evidence rather than general impressions.>
 
+Assessment Deficiencies:
+<For each criterion that could not be adequately assessed, identify the criterion, explain why the assessment could not 
+be completed, and specify what additional evidence, access, testing, or other information would be required to reach a 
+defensible conclusion. When feasible and applicable, explain how the missing information or evidence could be obtained 
+or produced to support a future assessment.>
+
 Improvement Plan:
 <Include a concise, prioritized plan to improve the system. Prioritize improvements by their consequences, not simply by 
 their scores. Consider listing sections that contain crucial items, best ROI items, easy/quick fixes, simple errors, 
