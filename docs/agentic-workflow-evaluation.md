@@ -2127,43 +2127,47 @@ FAILED MANDATORY REQUIREMENTS
 
 OVERALL ASSESSMENT / SUMMARY / ACTION ITEMS
 <This section addresses something the numerical scores and individual findings don't: what the assessment actually means 
-for using and improving the system.>
+ for using and improving the system.>
 
 System Strengths:
 <An explanation of use cases where this system is likely to perform well. This can include the types of questions that
-this system could likely answer well and correctly. Be sure to distinguish use cases supported by actual test results 
-from those inferred from architectural capabilities. This section can list highlights and aspects that seem 
-particularly good.>
+ this system could likely answer well and correctly. Be sure to distinguish use cases supported by actual test results 
+ from those inferred from architectural capabilities. This section can list highlights and aspects that seem 
+ particularly good.>
 
 System Limitations:
 <An explanation of use cases where this system is likely to perform poorly, struggle, or fail. This can include the 
-types of questions that this system is not likely to answer well or correctly. Be sure to distinguish between use cases 
-supported by actual test results, source-code inspection, or an architectural constraint/capability. This section can 
-list the aspects that seem particularly weak and in need of prioritized or immediate improvement.>
+ types of questions that this system is not likely to answer well or correctly. Be sure to distinguish between use cases 
+ supported by actual test results, source-code inspection, or an architectural constraint/capability. This section can 
+ list the aspects that seem particularly weak and in need of prioritized or immediate improvement.>
 
 Architectural Assessment:
 <Provide an overall assessment of the system's architecture and design, considering its suitability for the intended 
-research responsibilities, coherence of its components and interfaces, separation of concerns, allocation of 
-responsibilities, extensibility, maintainability, and architectural constraints.
+ research responsibilities, coherence of its components and interfaces, separation of concerns, allocation of 
+ responsibilities, extensibility, maintainability, and architectural constraints.
 
-Evaluate whether the architecture provides a sound foundation for reliable agentic research and whether its design can 
-accommodate missing or future capabilities without disproportionate restructuring. Distinguish fundamental architectural 
-limitations from implementation deficiencies that can be corrected within the existing design.
+ Evaluate whether the architecture provides a sound foundation for reliable agentic research and whether its design can 
+ accommodate missing or future capabilities without disproportionate restructuring. Distinguish fundamental 
+ architectural limitations from implementation deficiencies that can be corrected within the existing design.
 
-Identify particularly effective or problematic architectural decisions, their consequences, and significant technical 
-tradeoffs. Support conclusions with specific architectural or implementation evidence rather than general impressions.>
+ Identify particularly effective or problematic architectural decisions, their consequences, and significant technical 
+ tradeoffs. Support conclusions with specific architectural or implementation evidence rather than general impressions.>
 
 Assessment Deficiencies:
 <For each criterion that could not be adequately assessed, identify the criterion, explain why the assessment could not 
-be completed, and specify what additional evidence, access, testing, or other information would be required to reach a 
-defensible conclusion. When feasible and applicable, explain how the missing information or evidence could be obtained 
-or produced to support a future assessment.>
+ be completed, and specify what additional evidence, access, testing, or other information would be required to reach a 
+ defensible conclusion. When feasible and applicable, explain how the missing information or evidence could be obtained 
+ or produced to support a future assessment.>
 
 Improvement Plan:
 <Include a concise, prioritized plan to improve the system. Prioritize improvements by their consequences, not simply by 
-their scores. Consider listing sections that contain crucial items, best ROI items, easy/quick fixes, simple errors, 
-etc., depending on what has been found during analysis and may be of particular interest or help to the user that 
-receives the report.>
+ their scores. Consider listing sections that contain crucial items, best ROI items, easy/quick fixes, simple errors, 
+ etc., depending on what has been found during analysis and may be of particular interest or help to the user that 
+ receives the report.>
+
+Closing Comments:
+<This is an *optional* section to include anything of particular significance that is not specific to any other section 
+ of this report. Inclusion or omission of this section is up to the discretion of the reviewer.>
 ```
 
 Each support finding and gap must be separately identifiable, allowing its evidence and corresponding remediation 
