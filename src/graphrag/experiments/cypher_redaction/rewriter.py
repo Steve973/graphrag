@@ -1,4 +1,11 @@
-"""Insert a read-only Neo4j redaction procedure at Cypher graph-read sites."""
+"""
+Insert a read-only Neo4j redaction procedure at Cypher graph-read sites.
+In the work rag service app, the caller will likely have to keep the
+original query. The new query that has been modified, and if the mcp
+server rejects the query as invalid, the LLM will have to repair the
+original query. After that, it has to pass through this rewriter, and
+then it can try again.
+"""
 
 import re
 from collections import defaultdict
