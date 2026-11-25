@@ -5,15 +5,6 @@ number of inserted checks. Graphglot parses the Neo4j dialect. The rewriter uses
 AST source spans so comments, parameters, and syntax such as legacy variable-length
 relationships retain their original spelling.
 
-```bash
-python -m graphrag.experiments.cypher_redaction --procedure custom.redactionAllowed <<'CYPHER'
-MATCH (a:Author)-[:WROTE]->(p:Publication)
-OPTIONAL MATCH (p)-[:CITES*1..3]->(c:Publication)
-WHERE c.year >= $since
-RETURN a.name, p.title, collect(c.title)
-CYPHER
-```
-
 ```python
 from graphrag.experiments.cypher_redaction import CypherRedactionService
 
@@ -52,8 +43,6 @@ candidate nodes, `relationships` is the list of candidate relationships, and
 `entitlements` is the bound parameter containing the user's entitlement list.
 Use the order in the deployed signature and omit unused inputs. The default is
 `("nodes", "relationships", "entitlements")` with `YIELD allowed`.
-The CLI accepts the same settings via `--procedure`, `--arguments`,
-`--entitlement-parameter`, and `--decision-field`.
 
 A match checks each path's nodes and relationships, including anonymous intermediates.
 A named single-node match passes that node directly. The call runs in an `EXISTS`
