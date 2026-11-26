@@ -42,6 +42,11 @@ and acquisition.
   clarification changes the shape of the question. Treat a dropped explicit constraint as a breakdown defect the
   workflow can repair.
 
+## Vector Embeddings
+
+We need something to store the ontology, model, and schema DDL, and then compute embeddings and store them in that
+database and then create vector indexes. In-memory database, like Chroma's EphemeralClient.
+
 ## Grounding the breakdown
 
 - [ ] Build two independently searchable embedding catalogs at app startup. Use Mobi as the ontology source if that is
