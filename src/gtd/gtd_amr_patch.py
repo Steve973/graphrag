@@ -13,6 +13,7 @@ from pydantic import Field
 
 from graphrag.experiments.qdmr.codex_backend import CodexBackend
 from graphrag.experiments.qdmr.core import Contract, StructuredBackend, Text, decompose
+from graphrag.experiments.qdmr.penman_parser import parse_question_to_penman
 from .gtd_amr import amr_items, parse
 from .gtd_compare import codex_items, review_items
 from .gtd_grounding import CORPUS_CONTEXT
@@ -159,14 +160,21 @@ async def assess(backend: StructuredBackend, backend_name: str, question: str, a
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("question")
-    parser.add_argument("--amr-model", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--amr-model", type=Path, help="Path to a BART AMR checkpoint")
+    source.add_argument("--penman-model", help="Codex model for AMR generation, e.g. gpt-6.2-sol")
     parser.add_argument("--codex-timeout", type=float, default=120)
     args = parser.parse_args()
     question = args.question.strip()
     if not question:
         parser.error("question must be non-empty")
     started = perf_counter()
-    amr = amr_items(parse(question, args.amr_model), question)
+    if args.penman_model:
+        generator = CodexBackend(model=args.penman_model, timeout=args.codex_timeout)
+        penman_text = asyncio.run(parse_question_to_penman(question, backend=generator))
+    else:
+        penman_text = parse(question, args.amr_model)
+    amr = amr_items(penman_text, question)
     elapsed = perf_counter() - started
     backend = CodexBackend(timeout=args.codex_timeout)
     result = asyncio.run(assess(backend, backend.name, question, amr))
