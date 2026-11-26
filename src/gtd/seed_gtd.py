@@ -4,7 +4,7 @@ import argparse
 import os
 from pathlib import Path
 
-from .gtd_ingest import GTDBatchResult, load_gtd
+from .gtd_ingest import GTDBatchResult, GTDIngestor, load_gtd, read_preparation_manifest
 from .gtd_prepare import GtdPreparationResult, prepare_gtd_csv
 
 
@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--password", default=os.getenv("NEO4J_PASSWORD", "neo4jpassword")
     )
     parser.add_argument("--batch-size", type=int, default=1_000)
+    parser.add_argument("--encoding", default="utf-8-sig", help="Source CSV encoding.")
     parser.add_argument(
         "--import-dir",
         type=Path,
@@ -39,10 +40,16 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.getenv("NEO4J_IMPORT_URI", "file:///gtd"),
         help="Neo4j-visible URI for --import-dir.",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--prepare-only",
         action="store_true",
         help="Validate and prepare graph-shaped CSV files without loading Neo4j.",
+    )
+    mode.add_argument(
+        "--load-prepared",
+        action="store_true",
+        help="Load the existing prepared files from --import-dir.",
     )
     parser.add_argument(
         "--replace-prepared",
@@ -58,12 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.csv is None:
+    if args.csv is None and not args.load_prepared:
         parser.error("provide --csv or set GTD_CSV_PATH")
 
     if args.prepare_only:
         prepared: GtdPreparationResult = prepare_gtd_csv(
-            args.csv, args.import_dir, replace=args.replace_prepared
+            args.csv, args.import_dir, replace=args.replace_prepared, encoding=args.encoding
         )
         print(
             f"Validated {prepared.source_rows} GTD rows and wrote "
@@ -71,17 +78,31 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0
 
-    result: GTDBatchResult = load_gtd(
-        args.csv,
-        args.uri,
-        args.user,
-        args.password,
-        import_dir=args.import_dir,
-        import_uri=args.import_uri,
-        batch_size=args.batch_size,
-        wipe=args.wipe,
-        replace_prepared=args.replace_prepared,
-    )
+    if args.load_prepared:
+        prepared = read_preparation_manifest(args.import_dir)
+        ingestor = GTDIngestor(args.uri, args.user, args.password)
+        try:
+            if args.wipe:
+                ingestor.wipe()
+            ingestor.prepare_schema()
+            result = ingestor.ingest_prepared(
+                prepared, import_uri=args.import_uri, batch_size=args.batch_size
+            )
+        finally:
+            ingestor.close()
+    else:
+        result: GTDBatchResult = load_gtd(
+            args.csv,
+            args.uri,
+            args.user,
+            args.password,
+            import_dir=args.import_dir,
+            import_uri=args.import_uri,
+            batch_size=args.batch_size,
+            wipe=args.wipe,
+            replace_prepared=args.replace_prepared,
+            encoding=args.encoding,
+        )
     print(
         f"Loaded {result.incidents_written} incidents from {result.rows_seen} GTD rows; "
         f"targets={result.reconciliation['targets']}, "

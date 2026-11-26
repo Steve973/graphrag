@@ -106,6 +106,29 @@ def test_preserves_partial_date_precision(tmp_path: Path) -> None:
     assert incident["date_precision"] == "year"
 
 
+def test_preserves_fractional_values_and_reports_malformed_related_ids(tmp_path: Path) -> None:
+    source = tmp_path / "gtd.csv"
+    output = tmp_path / "prepared"
+    first = _row()
+    first.update({
+        "nhours": "0.25",
+        "nperpcap": "2.5",
+        "related": "2020010100002, 202001010002",
+    })
+    _write_source(source, [first, _row("202001010002")])
+
+    result = prepare_gtd_csv(source, output)
+
+    assert result.invalid_related_references == 1
+    incident = _read(output / "incidents.csv")[0]
+    assert incident["nhours"] == "0.25"
+    assert incident["nperpcap"] == "2.5"
+    assert incident["related"] == first["related"]
+    assert _read(output / "related_incidents.csv") == [
+        {"eventid": "202001010001", "related_eventid": "202001010002"}
+    ]
+
+
 def test_rejects_missing_columns_before_creating_output(tmp_path: Path) -> None:
     source = tmp_path / "gtd.csv"
     output = tmp_path / "prepared"

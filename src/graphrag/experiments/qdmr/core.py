@@ -169,14 +169,21 @@ it contains typos. Do not copy concepts from these examples into unrelated input
 
 
 async def decompose(question: str, *, backend: StructuredBackend,
-                    backend_name: str) -> Decomposition:
+                    backend_name: str, corpus_context: str | None = None) -> Decomposition:
     """Return source-grounded semantics; transport/validation errors propagate."""
     if not isinstance(question, str) or not question.strip():
         raise ValueError("Question must be a non-empty string")
     if not isinstance(backend_name, str) or not backend_name.strip():
         raise ValueError("backend_name must identify the configured model")
+    system_prompt = SYSTEM_PROMPT
+    if corpus_context:
+        system_prompt += (
+            "\nThe caller supplied this corpus context. Use it for referents and retain "
+            "the user's exact text for every source quote. Context supplies no database "
+            f"schema or facts about the answer.\n{corpus_context}"
+        )
     draft = await backend.complete(
-        messages=[{"role": "system", "content": SYSTEM_PROMPT},
+        messages=[{"role": "system", "content": system_prompt},
                   {"role": "user", "content": question.strip()}],
         response_model=DecompositionDraft,
     )

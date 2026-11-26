@@ -14,7 +14,7 @@ from dataclasses import asdict, dataclass
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from .gtd_schema import (
     ATTACK_FIELDS,
@@ -39,6 +39,7 @@ class GtdPreparationResult:
     source_rows: int
     files: dict[str, int]
     extra_columns: tuple[str, ...] = ()
+    invalid_related_references: int = 0
 
 
 FILE_HEADERS: dict[str, tuple[str, ...]] = {
@@ -110,6 +111,7 @@ FILE_HEADERS: dict[str, tuple[str, ...]] = {
 
 class _CsvOutputs:
     def __init__(self, directory: Path, stack: ExitStack) -> None:
+        self.invalid_related_references = 0
         self.counts = {name: 0 for name in FILE_HEADERS}
         self._writers: dict[str, csv.DictWriter] = {}
         self._unique_keys: dict[str, set[str]] = {}
@@ -176,12 +178,21 @@ def _is_known_name(value: str) -> bool:
     return bool(value) and value.casefold() not in {"unknown", "not applicable", "n/a"}
 
 
-def _detect_dialect(path: Path) -> type[csv.Dialect]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+def _detect_dialect(path: Path, encoding: str) -> type[csv.Dialect]:
+    with path.open("r", encoding=encoding, newline="") as handle:
+        header = handle.readline()
+        handle.seek(0)
         sample = handle.read(128 * 1024)
     try:
         return csv.Sniffer().sniff(sample, delimiters=",;\t|")
     except csv.Error as error:
+        # A partial quoted record at the end of the sample can confuse Sniffer.
+        for delimiter in ",;\t|":
+            fields = next(csv.reader([header], delimiter=delimiter))
+            if {"eventid", "iyear", "imonth", "iday"}.issubset(fields):
+                dialect = csv.Sniffer().sniff(header, delimiters=delimiter)
+                dialect.doublequote = True
+                return dialect
         raise GTDValidationError(
             f"could not determine the CSV delimiter: {error}"
         ) from error
@@ -521,7 +532,16 @@ def _write_row(
                 "claim_groups.csv", {"claim_id": claim_id, "group_id": group_ids[slot]}
             )
 
-    for related_id in _related_ids(row["related"], row_number):
+    related_ids = set()
+    for item in row["related"].split(","):
+        if not item.strip():
+            continue
+        try:
+            related_ids.add(_event_id(item.strip(), row_number))
+        except GTDValidationError:
+            # The incident retains the source value even if it cannot be linked.
+            outputs.invalid_related_references += 1
+    for related_id in sorted(related_ids):
         if related_id != eventid:
             first, second = sorted((eventid, related_id))
             outputs.write_unique(
@@ -531,22 +551,12 @@ def _write_row(
             )
 
 
-def _related_ids(value: str, row_number: int) -> Iterable[str]:
-    if not value:
-        return ()
-    ids: list[str] = []
-    for item in value.split(","):
-        candidate = item.strip()
-        if candidate:
-            ids.append(_event_id(candidate, row_number))
-    return tuple(dict.fromkeys(ids))
-
-
 def prepare_gtd_csv(
     source_path: Path,
     output_dir: Path,
     *,
     replace: bool = False,
+    encoding: str = "utf-8-sig",
 ) -> GtdPreparationResult:
     """Validate one denormalized GTD CSV and create normalized Neo4j import files."""
 
@@ -575,7 +585,7 @@ def prepare_gtd_csv(
             )
     output_dir.parent.mkdir(parents=True, exist_ok=True)
     csv.field_size_limit(min(sys.maxsize, 2**31 - 1))
-    dialect = _detect_dialect(source_path)
+    dialect = _detect_dialect(source_path, encoding)
     source_hash = _source_sha256(source_path)
     temporary = Path(
         tempfile.mkdtemp(prefix=f".{output_dir.name}-", dir=output_dir.parent)
@@ -588,7 +598,7 @@ def prepare_gtd_csv(
             outputs = _CsvOutputs(temporary, stack)
             dimensions = _Dimensions(outputs)
             source = stack.enter_context(
-                source_path.open("r", encoding="utf-8-sig", newline="")
+                source_path.open("r", encoding=encoding, newline="")
             )
             reader = csv.DictReader(source, dialect=dialect)
             headers = tuple(reader.fieldnames or ())
@@ -621,6 +631,7 @@ def prepare_gtd_csv(
             source_rows=row_count,
             files=dict(outputs.counts),
             extra_columns=extra_columns,
+            invalid_related_references=outputs.invalid_related_references,
         )
         (temporary / "manifest.json").write_text(
             json.dumps(asdict(result), indent=2, sort_keys=True) + "\n",

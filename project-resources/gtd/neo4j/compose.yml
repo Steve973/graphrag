@@ -1,0 +1,23 @@
+name: graphrag-gtd
+services:
+  neo4j:
+    image: neo4j:2026.10.2
+    environment:
+      NEO4J_AUTH: ${GTD_NEO4J_AUTH:-none}
+      NEO4J_server_memory_heap_max__size: 4G
+      NEO4J_server_memory_pagecache_size: 2G
+      NEO4J_dbms_usage__report_enabled: "false"
+      NEO4J_dbms_import_csv_legacy__quote__escaping: "false"
+    ports:
+      - "127.0.0.1:${GTD_HTTP_PORT:-17474}:7474"
+      - "127.0.0.1:${GTD_BOLT_PORT:-17687}:7687"
+    volumes:
+      - store:/data
+      - ${GTD_PREPARED_DIR:-.}:/import/gtd:ro
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -a bolt://localhost:7687 -u \"$$(echo \"$$NEO4J_AUTH\" | cut -d/ -f1)\" -p \"$$(echo \"$$NEO4J_AUTH\" | cut -d/ -f2-)\" 'RETURN 1'"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+volumes:
+  store:

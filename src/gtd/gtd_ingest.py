@@ -34,10 +34,21 @@ CONSTRAINTS = (
 )
 
 INDEXES = (
+    "CREATE RANGE INDEX gtd_incident_eventid IF NOT EXISTS FOR (n:GTDIncident) ON (n.eventid)",
     "CREATE INDEX gtd_incident_year IF NOT EXISTS FOR (n:GTDIncident) ON (n.iyear)",
     "CREATE INDEX gtd_incident_date IF NOT EXISTS FOR (n:GTDIncident) ON (n.incident_date)",
     "CREATE INDEX gtd_country_name IF NOT EXISTS FOR (n:GTDCountry) ON (n.name)",
     "CREATE INDEX gtd_group_name IF NOT EXISTS FOR (n:PerpetratorGroup) ON (n.name)",
+    "CREATE RANGE INDEX gtd_incident_country_year IF NOT EXISTS FOR (n:GTDIncident) ON (n.country, n.iyear)",
+    "CREATE RANGE INDEX gtd_incident_region_year IF NOT EXISTS FOR (n:GTDIncident) ON (n.region, n.iyear)",
+    "CREATE RANGE INDEX gtd_incident_fatalities IF NOT EXISTS FOR (n:GTDIncident) ON (n.nkill)",
+    "CREATE RANGE INDEX gtd_incident_injuries IF NOT EXISTS FOR (n:GTDIncident) ON (n.nwound)",
+    "CREATE RANGE INDEX gtd_area_name IF NOT EXISTS FOR (n:GeopoliticalArea) ON (n.name)",
+    "CREATE RANGE INDEX gtd_locality_name IF NOT EXISTS FOR (n:GTDLocality) ON (n.name)",
+    "CREATE RANGE INDEX gtd_region_name IF NOT EXISTS FOR (n:GTDRegion) ON (n.name)",
+    "CREATE POINT INDEX gtd_incident_coordinates IF NOT EXISTS FOR (n:GTDIncident) ON (n.coordinates)",
+    "CREATE FULLTEXT INDEX gtd_incident_text IF NOT EXISTS FOR (n:GTDIncident) ON EACH [n.summary]",
+    "CREATE FULLTEXT INDEX gtd_entity_names IF NOT EXISTS FOR (n:GTDReference|GeographicArea|PerpetratorGroup) ON EACH [n.name]",
 )
 
 
@@ -71,6 +82,8 @@ def _incident_body() -> str:
     return (
         "MERGE (i:GTD:Incident:GTDIncident {eventid: trim(row.eventid)})\n"
         "SET " + ",\n    ".join(assignments)
+        + "\nSET i.coordinates = CASE WHEN abs(i.latitude) <= 90 AND abs(i.longitude) <= 180 "
+        "THEN point({latitude: i.latitude, longitude: i.longitude}) END"
     )
 
 
@@ -317,23 +330,23 @@ class GTDIngestor:
                 ).consume()
             reconciliation = session.run(
                 """
-                CALL {
+                CALL () {
                 MATCH (i:GTDIncident {source_sha256: $source_sha256})
                 RETURN count(i) AS incidents
                 }
-                CALL {
+                CALL () {
                 MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_TARGET]->(n:TargetObservation)
                 RETURN count(n) AS targets
                 }
-                CALL {
+                CALL () {
                 MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:USED_WEAPON]->(n:WeaponUse)
                 RETURN count(n) AS weapon_uses
                 }
-                CALL {
+                CALL () {
                 MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_ATTRIBUTION]->(n:PerpetratorAttribution)
                 RETURN count(n) AS attributions
                 }
-                CALL {
+                CALL () {
                 MATCH (i:GTDIncident {source_sha256: $source_sha256})-[:HAS_CLAIM]->(n:Claim)
                 RETURN count(n) AS claims
                 }
@@ -386,10 +399,13 @@ def load_gtd(
     batch_size: int = 1_000,
     wipe: bool = False,
     replace_prepared: bool = False,
+    encoding: str = "utf-8-sig",
 ) -> GTDBatchResult:
     """Prepare the source before connecting, then load it from Neo4j's import directory."""
 
-    prepared = prepare_gtd_csv(csv_path, import_dir, replace=replace_prepared)
+    prepared = prepare_gtd_csv(
+        csv_path, import_dir, replace=replace_prepared, encoding=encoding
+    )
     ingestor = GTDIngestor(uri, user, password)
     try:
         if wipe:
